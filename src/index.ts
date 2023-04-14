@@ -59,7 +59,7 @@ import path from 'path';
     }
   });
 
-  const resource = () => createAudioResource(path.join(__dirname, '..', 'bell.mp3'), {
+  const resource = () => createAudioResource(path.join(__dirname, '..', 'test.mp3'), {
     metadata: {
       title: 'The Bell Chimes'
     }
@@ -86,13 +86,13 @@ import path from 'path';
     }
     console.log('Muting all');
     await setMuteAll(true, 'The bell tolls');
+    console.log('Playing the tune');
+    connection.subscribe(player);
+    player.play(resource()); 
     player.on(AudioPlayerStatus.Idle, async () => {
       await setMuteAll(false, 'The bell no longer tolls');
       connection.disconnect();
     });
-    console.log('Playing the tune');
-    connection.subscribe(player);
-    player.play(resource());
   }
 
   const job = new CronJob(
