@@ -41,7 +41,7 @@ import path from 'path';
 
   function channelWithMostUsers() {
     console.log('Finding channel with most users');
-    let maxChannel: VoiceChannel | null = null; 
+    let maxChannel: VoiceChannel | null = null;
     for (const [_, channel] of voiceChannels) {
       console.log('Trying channel ', channel.name);
       if (!maxChannel || channel.members.size > maxChannel.members.size) {
@@ -88,7 +88,7 @@ import path from 'path';
     await setMuteAll(true, 'The bell tolls');
     player.on(AudioPlayerStatus.Idle, async () => {
       await setMuteAll(false, 'The bell no longer tolls');
-      connection.destroy();
+      connection.disconnect();
     });
     console.log('Playing the tune');
     connection.subscribe(player);
@@ -105,4 +105,5 @@ import path from 'path';
 
   job.start();
 
-})();
+})()
+  .catch(console.error);
