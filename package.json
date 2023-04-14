@@ -1,0 +1,19 @@
+{
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/index.js",
+    "serve": "npm run build && npm run start"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.16.0",
+    "cron": "^2.3.0",
+    "discord.js": "^14.9.0",
+    "dotenv": "^16.0.3",
+    "ffmpeg-static": "^5.1.0",
+    "libsodium-wrappers": "^0.7.11"
+  },
+  "devDependencies": {
+    "@types/cron": "^2.0.1",
+    "ts-node": "^10.9.1"
+  }
+}
