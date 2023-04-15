@@ -1,6 +1,6 @@
 import { ChannelType, Client, ClientOptions, Collection, Events, GatewayIntentBits, GuildBasedChannel, GuildMember, ThreadMemberManager, User, VoiceChannel } from 'discord.js';
 import Config from './Config';
-import { AudioPlayerStatus, NoSubscriberBehavior, createAudioPlayer, createAudioResource, entersState, joinVoiceChannel } from '@discordjs/voice';
+import { AudioPlayerStatus, NoSubscriberBehavior, PlayerSubscription, createAudioPlayer, createAudioResource, entersState, joinVoiceChannel } from '@discordjs/voice';
 import { CronJob } from 'cron';
 import path from 'path';
 
@@ -92,12 +92,9 @@ import path from 'path';
       player.play(resource());
       try {
         await entersState(player, AudioPlayerStatus.Playing, 5_000);
-        console.log('The bell is tolling');
-        await entersState(player, AudioPlayerStatus.Idle, 1_000);
-        console.log('The bell finishes');
-        console.log('Unmuting all');
-        connection.disconnect();
-        await setMuteAll(false, 'The bell no longer tolls');
+        player.on(AudioPlayerStatus.Idle, async () => {
+          await setMuteAll(false, 'The bell no longer tolls');
+        })
       } catch (err) {
         console.error(err);
       }
