@@ -1,6 +1,6 @@
-import { ChannelType, Client, ClientOptions, Collection, Events, GatewayIntentBits, GuildBasedChannel, ThreadMemberManager, VoiceChannel } from 'discord.js';
+import { ChannelType, Client, ClientOptions, Collection, Events, GatewayIntentBits, GuildBasedChannel, GuildMember, ThreadMemberManager, User, VoiceChannel } from 'discord.js';
 import Config from './Config';
-import { AudioPlayerStatus, NoSubscriberBehavior, createAudioPlayer, createAudioResource, joinVoiceChannel } from '@discordjs/voice';
+import { AudioPlayerStatus, NoSubscriberBehavior, createAudioPlayer, createAudioResource, entersState, joinVoiceChannel } from '@discordjs/voice';
 import { CronJob } from 'cron';
 import path from 'path';
 
@@ -36,20 +36,15 @@ import path from 'path';
   }
 
   const guild = await getGuild();
-  console.log('My guild: ')
   const voiceChannels = guild.channels.cache.filter((chan) => chan.type === ChannelType.GuildVoice) as Collection<string, VoiceChannel>;
 
   function channelWithMostUsers() {
-    console.log('Finding channel with most users');
     let maxChannel: VoiceChannel | null = null;
     for (const [_, channel] of voiceChannels) {
-      console.log('Trying channel ', channel.name);
       if (!maxChannel || channel.members.size > maxChannel.members.size) {
-        console.log('New max: ', channel.name);
         maxChannel = channel;
       }
     }
-    console.log('Final max: ', maxChannel?.name);
     return maxChannel;
   }
 
@@ -59,7 +54,8 @@ import path from 'path';
     }
   });
 
-  const resource = () => createAudioResource(path.join(__dirname, '..', 'test.mp3'), {
+  const audio = path.join(__dirname, '..', Config.audioFile);
+  const resource = () => createAudioResource(audio, {
     metadata: {
       title: 'The Bell Chimes'
     }
@@ -74,25 +70,38 @@ import path from 'path';
       // There are no users in any voice channel
       return;
     }
+
+    const setMuteAll = (mute: boolean, reason: string) => {
+      const action = mute ? "Muting" : "Unmuting";
+      const { members } = maxChannel;
+      return Promise.all(members.map((member) => {
+        console.log(`${action} member ${member.user.username}`)
+        return member.voice.setMute(mute, reason);
+      }));
+    }
+
+    await setMuteAll(true, 'The bell tolls');
     const connection = joinVoiceChannel({
       channelId: maxChannel.id,
       guildId: maxChannel.guildId,
       adapterCreator: maxChannel.guild.voiceAdapterCreator
     });
-    const setMuteAll = (mute: boolean, reason: string) => {
-      return Promise.all(maxChannel.members.map((user) => {
-        return user.voice.setMute(mute, reason);
-      }));
+
+    const subscription = connection.subscribe(player);
+    if (subscription) {
+      player.play(resource());
+      try {
+        await entersState(player, AudioPlayerStatus.Playing, 5_000);
+        console.log('The bell is tolling');
+        await entersState(player, AudioPlayerStatus.Idle, 1_000);
+        console.log('The bell finishes');
+        console.log('Unmuting all');
+        connection.disconnect();
+        await setMuteAll(false, 'The bell no longer tolls');
+      } catch (err) {
+        console.error(err);
+      }
     }
-    console.log('Muting all');
-    await setMuteAll(true, 'The bell tolls');
-    console.log('Playing the tune');
-    connection.subscribe(player);
-    player.play(resource()); 
-    player.on(AudioPlayerStatus.Idle, async () => {
-      await setMuteAll(false, 'The bell no longer tolls');
-      connection.disconnect();
-    });
   }
 
   const job = new CronJob(
