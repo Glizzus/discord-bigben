@@ -17,6 +17,9 @@ import {
 } from "@discordjs/voice";
 import { CronJob } from "cron";
 import Logger from "./Logger";
+import debug from 'debug';
+
+const debugLogger = debug('discord-bigben');
 
 const options: ClientOptions = {
   intents: [
@@ -24,7 +27,7 @@ const options: ClientOptions = {
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildVoiceStates,
   ],
-};
+}
 
 const client = new Client(options);
 
@@ -34,7 +37,7 @@ client
     await new Promise<void>((res, rej) => {
       client.once(Events.Error, rej);
       client.once(Events.ClientReady, (c) => {
-        Logger.info(`Logged in as ${c.user.tag}`);
+        debugLogger(`Logged in as ${c.user.tag}`);
         res();
       });
     });
@@ -78,15 +81,15 @@ client
       });
 
     async function bell() {
-      Logger.info("Looking to ring the bell.")
+      debugLogger("Looking to ring the bell.")
 
       const maxChannel = channelWithMostUsers();
       if (!maxChannel) {
-        Logger.info("No users in the guild; aborting...");
+        debugLogger("No users in the guild; aborting...");
         // There are no users in any voice channel
         return;
       }
-      Logger.info(`Ringing the bell for channel ${maxChannel.name}`);
+      debugLogger(`Ringing the bell for channel ${maxChannel.name}`);
 
       const setMuteAll = (mute: boolean, reason: string) => {
         const action = mute ? "Muting" : "Unmuting";
@@ -127,7 +130,7 @@ client
       }
     }
     const job = new CronJob(Config.cron, bell, null, true, "America/Chicago");
-    Logger.info(`Beginning toll job with crontab ${Config.cron}`);
+    debugLogger(`Beginning toll job with crontab ${Config.cron}`);
     job.start();
   })
   .catch(Logger.error);

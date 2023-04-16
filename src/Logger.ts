@@ -12,16 +12,6 @@ const transports: winston.LoggerOptions['transports'] = [
   })
 ];
 
-if (Config.debug) {
-  transports.push(new winston.transports.Console({
-    level: 'debug',
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
-
 const Logger = winston.createLogger({
   transports
 });

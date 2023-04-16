@@ -29,7 +29,6 @@ const Config = {
   audioFile: process.env.AUDIO_FILE,
   cron: process.env.CRON,
   environment: process.env["NODE_ENV"] ?? Environment.Development,
-  debug: Boolean(process.env["DEBUG"])
 } as const
 
 export default Config;
