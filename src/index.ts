@@ -37,7 +37,7 @@ client
     await new Promise<void>((res, rej) => {
       client.once(Events.Error, rej);
       client.once(Events.ClientReady, (c) => {
-        debugLogger(`Logged in as ${c.user.tag}`);
+        Logger.info(`Logged in as ${c.user.tag}`);
         res();
       });
     });
@@ -60,7 +60,7 @@ client
       let maxChannel: VoiceChannel | null = null;
       for (const [_, channel] of voiceChannels) {
         if (!maxChannel || channel.members.size > maxChannel.members.size) {
-          Logger.debug(`New maximum channel: ${channel.name}`);
+          debugLogger(`New maximum channel: ${channel.name}`);
           maxChannel = channel;
         }
       }
@@ -81,22 +81,22 @@ client
       });
 
     async function bell() {
-      debugLogger("Looking to ring the bell.")
+      Logger.info("Looking to ring the bell.")
 
       const maxChannel = channelWithMostUsers();
       if (!maxChannel) {
-        debugLogger("No users in the guild; aborting...");
+        Logger.info("No users in the guild; aborting...");
         // There are no users in any voice channel
         return;
       }
-      debugLogger(`Ringing the bell for channel ${maxChannel.name}`);
+      Logger.info(`Ringing the bell for channel ${maxChannel.name}`);
 
       const setMuteAll = (mute: boolean, reason: string) => {
         const action = mute ? "Muting" : "Unmuting";
         const { members } = maxChannel;
         return Promise.all(
           members.map((member) => {
-            Logger.debug(`${action} member ${member.user.username}`);
+            debugLogger(`${action} member ${member.user.username}`);
             return member.voice.setMute(mute, reason);
           })
         );
@@ -130,7 +130,7 @@ client
       }
     }
     const job = new CronJob(Config.cron, bell, null, true, "America/Chicago");
-    debugLogger(`Beginning toll job with crontab ${Config.cron}`);
+    Logger.info(`Beginning toll job with crontab ${Config.cron}`);
     job.start();
   })
   .catch(Logger.error);
