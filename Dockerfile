@@ -5,7 +5,7 @@ COPY .env tsconfig.json package*.json ./
 COPY src ./src
 RUN npm install && npm ci && npm run build
 
-FROM node:18-alpine
+FROM node:18
 WORKDIR /usr
 COPY package.json ./
 RUN npm install --only=production
