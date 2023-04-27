@@ -2,4 +2,4 @@ dist/
 node_modules/
 logs/
 *.mp3
-.env*
+*.env

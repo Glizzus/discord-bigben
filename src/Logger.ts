@@ -1,6 +1,4 @@
 import winston from 'winston'
-import Environment from './Environment';
-import Config from './Config';
 
 const transports: winston.LoggerOptions['transports'] = [
   new winston.transports.File({
