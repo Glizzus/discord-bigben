@@ -46,7 +46,7 @@ async function initClient() {
 async function getGuildById(guildId: string) {
   const guild = await client.guilds.fetch(guildId);
   if (!guild) {
-    throw new Error(`Unable to connect to guild ${Config.guildId}`);
+    throw new Error(`Unable to connect to guild ${guildId}`);
   }
   return guild;
 }

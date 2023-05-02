@@ -7,9 +7,6 @@ if (!process.env["TOKEN"]) {
   throw new Error("TOKEN is undefined");
 }
 
-if (!process.env["GUILD_ID"]) {
-  throw new Error("GUILD_ID is undefined");
-}
 
 if (!process.env["AUDIO_FILE"]) {
   throw new Error("AUDIO_FILE is undefined");
@@ -25,7 +22,6 @@ if (!process.env["NODE_ENV"]) {
 
 const Config = {
   token: process.env.TOKEN,
-  guildId: process.env.GUILD_ID,
   audioFile: process.env.AUDIO_FILE,
   cron: process.env.CRON,
   environment: process.env["NODE_ENV"] ?? Environment.Development,
