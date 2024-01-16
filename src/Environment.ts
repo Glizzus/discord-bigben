@@ -1,5 +1,5 @@
 enum Environment {
-  Development = "developmetn",
+  Development = "development",
   Production = "production",
   Test = "test"
 }

@@ -3,7 +3,10 @@ FROM node:18-alpine AS build
 WORKDIR /usr
 COPY .env tsconfig.json package*.json ./
 COPY src ./src
-RUN npm install && npm ci && npm run build
+
+# Seperate these steps to take advantage of Docker caching
+RUN npm install && npm ci
+RUN npm run build
 
 FROM node:18
 WORKDIR /usr

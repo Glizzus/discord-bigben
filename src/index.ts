@@ -1,136 +1,118 @@
-import {
-  ChannelType,
-  Client,
-  ClientOptions,
-  Collection,
-  Events,
-  GatewayIntentBits,
-  VoiceChannel,
-} from "discord.js";
+import * as discord from "discord.js";
 import Config from "./Config";
-import {
-  AudioPlayerStatus,
-  NoSubscriberBehavior,
-  createAudioPlayer,
-  createAudioResource,
-  joinVoiceChannel,
-} from "@discordjs/voice";
-import { CronJob } from "cron";
+import * as discordVoice from "@discordjs/voice";
 import Logger from "./Logger";
 import debug from 'debug';
 
 const debugLogger = debug('discord-bigben');
 
-const options: ClientOptions = {
+const options: discord.ClientOptions = {
   intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildVoiceStates,
+    discord.GatewayIntentBits.Guilds,
+    discord.GatewayIntentBits.GuildMembers,
+    discord.GatewayIntentBits.GuildVoiceStates,
   ],
 }
 
-const client = new Client(options);
+const audioPlayer = discordVoice.createAudioPlayer({
+  behaviors: {
+    noSubscriber: discordVoice.NoSubscriberBehavior.Stop,
+  },
+});
 
-client
-  .login(Config.token)
-  .then(async () => {
-    await new Promise<void>((res, rej) => {
-      client.once(Events.Error, rej);
-      client.once(Events.ClientReady, (c) => {
-        Logger.info(`Logged in as ${c.user.tag}`);
-        res();
-      });
-    });
+async function main() {
+  const client = new discord.Client(options);
+  client.login(Config.token);
 
-    async function getGuild() {
-      const guild = await client.guilds.fetch(Config.guildId);
+  debugLogger("Attempting to log in");
+  const successPromise = new Promise<void>((res) => {
+    client.once(discord.Events.ClientReady, (c) => {
+      Logger.info(`Logged in as ${c.user.tag}`);
+      res();
+    })
+  });
 
-      if (!guild) {
-        throw new Error(`Unable to connect to guild ${Config.guildId}`);
-      }
-      return guild;
+  const errorPromise = new Promise<void>((_, rej) => {
+    client.once(discord.Events.Error, rej);
+  });
+
+  // We want to let the error get thrown if it happens
+  await Promise.race([successPromise, errorPromise]);
+
+  // By this point, we have logged in. We can undo the error listener.
+  client.removeAllListeners(discord.Events.Error);
+
+    const guild = await client.guilds.fetch(Config.guildId);
+  if (!guild) {
+    debugLogger(`Unable to connect to guild ${Config.guildId}`);
+    throw new Error(`Unable to connect to guild ${Config.guildId}`);
+  }
+  debugLogger(`Connected to guild ${guild.name}`);
+
+  debugLogger("Finding voice channels")
+  // We could use a filter, but I don't want to typecast. A for loop is fine.
+  const voiceChannels = []
+  for (const [_, channel] of guild.channels.cache) {
+    if (channel.type === discord.ChannelType.GuildVoice) {
+      voiceChannels.push(channel);
     }
+  }
 
-    const guild = await getGuild();
-    const voiceChannels = guild.channels.cache.filter(
-      (chan) => chan.type === ChannelType.GuildVoice
-    ) as Collection<string, VoiceChannel>;
-
-    function channelWithMostUsers() {
-      let maxChannel: VoiceChannel | null = null;
-      for (const [_, channel] of voiceChannels) {
-        if (!maxChannel || channel.members.size > maxChannel.members.size) {
-          debugLogger(`New maximum channel: ${channel.name}`);
-          maxChannel = channel;
-        }
-      }
-      return maxChannel;
+  let maxChannel: discord.VoiceChannel | null = null;
+  for (const channel of voiceChannels) {
+    if (!maxChannel || channel.members.size > maxChannel.members.size) {
+      debugLogger(`New maximum channel: ${channel.name}`);
+      maxChannel = channel;
     }
+  }
+  if (!maxChannel) {
+    // There are no users in any voice channel - this is not an error.
+    return;
+  }
 
-    const player = createAudioPlayer({
-      behaviors: {
-        noSubscriber: NoSubscriberBehavior.Stop,
-      },
-    });
+  const resource = discordVoice.createAudioResource(Config.audioFile, {
+    metadata: {
+      title: "The Bell Chimes",
+    },
+  });
 
-    const resource = () =>
-      createAudioResource(Config.audioFile, {
-        metadata: {
-          title: "The Bell Chimes",
-        },
-      });
+  const connection = discordVoice.joinVoiceChannel({
+    channelId: maxChannel.id,
+    guildId: maxChannel.guildId,
+    adapterCreator: maxChannel.guild.voiceAdapterCreator,
+  });
 
-    async function bell() {
-      Logger.info("Looking to ring the bell.")
+  const { members } = maxChannel;
+  await Promise.all(
+    members.map((member) => {
+      debugLogger(`Muting member ${member.user.username}`);
+      return member.voice.setMute(true, "The bell tolls");
+    })
+  );
 
-      const maxChannel = channelWithMostUsers();
-      if (!maxChannel) {
-        Logger.info("No users in the guild; aborting...");
-        // There are no users in any voice channel
-        return;
-      }
-      Logger.info(`Ringing the bell for channel ${maxChannel.name}`);
+  const subscription = connection.subscribe(audioPlayer);
+  if (subscription) {
+    audioPlayer.play(resource);
+    audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, () => {
 
-      const setMuteAll = (mute: boolean, reason: string) => {
-        const action = mute ? "Muting" : "Unmuting";
-        const { members } = maxChannel;
-        return Promise.all(
+      // We need a seperate async function because the parent function expects
+      // a void return, not a Promise<void> return.
+      async function unmuteMembers() {
+        await Promise.all(
           members.map((member) => {
-            debugLogger(`${action} member ${member.user.username}`);
-            return member.voice.setMute(mute, reason);
+            debugLogger(`Unmuting member ${member.user.username}`);
+            return member.voice.setMute(false, "The bell no longer tolls");
           })
         );
-      };
-
-      await setMuteAll(true, "The bell tolls");
-      const connection = joinVoiceChannel({
-        channelId: maxChannel.id,
-        guildId: maxChannel.guildId,
-        adapterCreator: maxChannel.guild.voiceAdapterCreator,
-      });
-
-      async function listener() {
-        try {
-          await setMuteAll(false, "The bell no longer tolls");
-          player.removeListener(AudioPlayerStatus.Idle, listener);
-          connection.disconnect();
-        } catch (err) {
-          console.error(err);
-        }
+        connection.disconnect();
       }
 
-      const subscription = connection.subscribe(player);
-      if (subscription) {
-        player.play(resource());
-        try {
-          player.on(AudioPlayerStatus.Idle, listener);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-    }
-    const job = new CronJob(Config.cron, bell, null, true, "America/Chicago");
-    Logger.info(`Beginning toll job with crontab ${Config.cron}`);
-    job.start();
-  })
-  .catch(Logger.error);
+      unmuteMembers();
+    });
+  }
+}
+
+main().catch((e) => {
+  debugLogger(e);
+  process.exit(1);
+});
