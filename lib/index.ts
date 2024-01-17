@@ -20,7 +20,7 @@ const audioPlayer = discordVoice.createAudioPlayer({
   },
 });
 
-async function main() {
+export default async function run() {
   const client = new discord.Client(options);
   client.login(Config.token);
 
@@ -111,11 +111,3 @@ async function main() {
     });
   }
 }
-
-main().catch((e) => {
-  debugLogger(e);
-  process.exit(1);
-})
-.finally(() => {
-  process.exit(0);
-});
