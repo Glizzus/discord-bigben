@@ -113,41 +113,7 @@ export default async function toll() {
     })
   );
 
-  let playBackStarted = false;
-
   audioPlayer.play(makeResouce());
-
-  audioPlayer.on('error', (e) => {
-    Logger.error(`Error playing audio: ${e.message}`);
-  })
-
-  audioPlayer.on(discordVoice.AudioPlayerStatus.Playing, () => {
-    debugLogger("Audio player is playing");
-    playBackStarted = true;
-  });
-
-  const songFinishes = new Promise<void>((res) => {
-    audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, () => {
-      if (!playBackStarted) {
-        debugLogger("Audio player was never started. Exiting");
-      } else {
-        debugLogger("Audio player is idle after playing");
-      }
-      res();
-    });
-  })
-
-  const timeout = new Promise<void>((res) => {
-
-    const action = () => {
-      if (!playBackStarted) {
-        debugLogger("Timeout reached before audio player started");
-      }
-      res();
-    };
-
-    setTimeout(action, 10000);
-  });
 
   const subscription = connection.subscribe(audioPlayer);
   if (subscription === undefined) {
@@ -155,8 +121,10 @@ export default async function toll() {
     return;
   }
 
-  await Promise.race([songFinishes, timeout])
-  audioPlayer.removeAllListeners(discordVoice.AudioPlayerStatus.Idle);
+  debugLogger("Waiting for audio player to start playing");
+  await discordVoice.entersState(audioPlayer, discordVoice.AudioPlayerStatus.Playing, 5_000);
+  debugLogger("Waiting for audio player to stop playing");
+  await discordVoice.entersState(audioPlayer, discordVoice.AudioPlayerStatus.Idle, 1_000);
 
   await Promise.all(
     members.map((member) => {
