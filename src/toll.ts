@@ -5,6 +5,7 @@ import Logger from "./Logger";
 import debug from 'debug';
 import { Readable } from "stream";
 import axios from "axios";
+import Muter from "./Muter";
 
 const debugLogger = debug('discord-bigben');
 
@@ -106,6 +107,11 @@ export default async function toll() {
   });
 
   const { members } = maxChannel;
+  const muter = new Muter([...members.values()])
+  process.on('SIGINT', async () => {
+    await muter.unmute();
+  })
+
   await Promise.all(
     members.map((member) => {
       debugLogger(`Muting member ${member.user.username}`);
