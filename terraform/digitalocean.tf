@@ -91,14 +91,19 @@ resource "digitalocean_app" "bigben_service" {
         worker {
             name = "bigben"
 
-            dockerfile_path = "./Dockerfile"
-           
             run_command = "node index.js schedule --cron '* * * * *'"
 
             github {
                 repo = "Glizzus/discord-bigben"
                 branch = "main"
                 deploy_on_push = true
+            }
+
+            env {
+                key = "NODE_ENV"
+                value = "production"
+                scope = "RUN_AND_BUILD_TIME"
+                type = "GENERAL"
             }
 
             env {

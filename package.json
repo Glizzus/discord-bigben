@@ -1,5 +1,9 @@
 {
+  "engines": {
+    "node": "20.11.0"
+  },
   "scripts": {
+    "build:digitalocean": "npm run build && npm ci",
     "build": "npx tsc",
     "start": "node dist/index.js"
   },
