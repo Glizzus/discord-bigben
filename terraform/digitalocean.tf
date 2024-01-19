@@ -25,6 +25,11 @@ variable "bigben_guild_id" {
     sensitive = true
 }
 
+variable "debug" {
+    type = bool
+    default = false
+}
+
 variable "do_spaces_access_id" {
     description = "DigitalOcean Spaces access ID"
     type = string
@@ -58,6 +63,7 @@ resource "digitalocean_project" "bigben" {
 resource "digitalocean_spaces_bucket" "bigben" {
     name = "bigben"
     region = "nyc3"
+    acl = "public-read"
 }
 
 resource "digitalocean_spaces_bucket_object" "bigben_mp3" {
@@ -65,6 +71,7 @@ resource "digitalocean_spaces_bucket_object" "bigben_mp3" {
     region = digitalocean_spaces_bucket.bigben.region
     key = "bigben.mp3"
     source = var.bigben_audio_file
+    acl = "public-read"
 }
 
 locals {
@@ -76,7 +83,7 @@ resource "digitalocean_app" "bigben_service" {
         name = "bigben"
         region = "nyc1"
 
-        service {
+        worker {
             name = "bigben"
 
             dockerfile_path = "./Dockerfile"
@@ -108,6 +115,13 @@ resource "digitalocean_app" "bigben_service" {
                 value = var.bigben_guild_id
                 scope = "RUN_TIME"
                 type = "SECRET"
+            }
+
+            env {
+                key = "DEBUG"
+                value = var.debug
+                scope = "RUN_TIME"
+                type = "GENERAL"
             }
         }
     }
