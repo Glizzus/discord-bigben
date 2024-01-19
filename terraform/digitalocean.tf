@@ -55,7 +55,7 @@ resource "digitalocean_project" "bigben" {
     environment = "Production"
 
     resources = [
-        //digitalocean_app.bigben_service.urn,
+        digitalocean_app.bigben_service.urn,
         digitalocean_spaces_bucket.bigben.urn,
     ]
 }
@@ -66,19 +66,23 @@ resource "digitalocean_spaces_bucket" "bigben" {
     acl = "public-read"
 }
 
-resource "digitalocean_spaces_bucket_object" "bigben_mp3" {
+locals {
+    mp3_name = regex("/([^/]+)$", var.bigben_audio_file)[0]
+}
+
+resource "digitalocean_spaces_bucket_object" "seeded_mp3" {
     bucket = digitalocean_spaces_bucket.bigben.name
     region = digitalocean_spaces_bucket.bigben.region
-    key = "bigben.mp3"
+    key = local.mp3_name
     source = var.bigben_audio_file
     acl = "public-read"
 }
 
 locals {
-    mp3_bucket_url = "${digitalocean_spaces_bucket.bigben.bucket_domain_name}/${digitalocean_spaces_bucket_object.bigben_mp3.key}"
+    mp3_bucket_url = "${digitalocean_spaces_bucket.bigben.bucket_domain_name}/${digitalocean_spaces_bucket_object.seeded_mp3.key}"
 }
 
-/*
+
 resource "digitalocean_app" "bigben_service" {
     spec {
         name = "bigben"
@@ -127,4 +131,3 @@ resource "digitalocean_app" "bigben_service" {
         }
     }
 }
-*/
