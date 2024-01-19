@@ -113,6 +113,7 @@ export default async function toll() {
     })
   );
 
+  let playBackStarted = false;
 
   audioPlayer.play(makeResouce());
 
@@ -120,19 +121,32 @@ export default async function toll() {
     Logger.error(`Error playing audio: ${e.message}`);
   })
 
+  audioPlayer.on(discordVoice.AudioPlayerStatus.Playing, () => {
+    debugLogger("Audio player is playing");
+    playBackStarted = true;
+  });
+
   const songFinishes = new Promise<void>((res) => {
     audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, () => {
-      debugLogger("Audio player is idle");
-      audioPlayer.removeAllListeners(discordVoice.AudioPlayerStatus.Idle);
+      if (!playBackStarted) {
+        debugLogger("Audio player was never started. Exiting");
+      } else {
+        debugLogger("Audio player is idle after playing");
+      }
       res();
     });
   })
 
   const timeout = new Promise<void>((res) => {
-    setTimeout(() => {
-      debugLogger("Timeout reached");
+
+    const action = () => {
+      if (!playBackStarted) {
+        debugLogger("Timeout reached before audio player started");
+      }
       res();
-    }, 10000);
+    };
+
+    setTimeout(action, 10000);
   });
 
   const subscription = connection.subscribe(audioPlayer);
@@ -141,7 +155,8 @@ export default async function toll() {
     return;
   }
 
-  await Promise.race([songFinishes, timeout]);
+  await Promise.race([songFinishes, timeout])
+  audioPlayer.removeAllListeners(discordVoice.AudioPlayerStatus.Idle);
 
   await Promise.all(
     members.map((member) => {
