@@ -91,7 +91,6 @@ export default async function toll() {
     return;
   }
 
-  debugLogger(`Creating audio resource from ${Config.audioFile}`)
   const resource = discordVoice.createAudioResource(Config.audioFile, {
     metadata: {
       title: "The Bell Chimes",

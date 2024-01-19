@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import Environment from "./Environment";
+import Logger from "./Logger";
 
 const environment = process.env["NODE_ENV"]?.toLowerCase() ?? (() => {
   const defaultEnv = Environment.Development;
@@ -30,5 +31,9 @@ const Config = {
   audioFile: process.env.BIGBEN_AUDIO_FILE,
   environment,
 } as const
+
+Logger.info("Loaded config");
+Logger.info(`Environment: ${Config.environment}`);
+Logger.info(`Audio file: ${Config.audioFile}`)
 
 export default Config;
