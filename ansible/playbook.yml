@@ -1,0 +1,15 @@
+- name: Setup Bigben
+  hosts: all
+  vars_files:
+    - vars/main.yml
+    # The custom.yml file is not included in the repository, you have to create it yourself
+    - vars/custom.yml
+  tasks:
+    - name: Ensure the GPG key for NodeJS Exists
+      ansible.builtin.apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+        state: present
+    
+    - name: Add NodeJS repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://deb.nodesource.com/node_"

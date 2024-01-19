@@ -82,57 +82,36 @@ locals {
     mp3_bucket_url = "${digitalocean_spaces_bucket.bigben.bucket_domain_name}/${digitalocean_spaces_bucket_object.seeded_mp3.key}"
 }
 
+var public_key_path {
+    type = string
+    default = "~/.ssh/bigben.pub"
+}
 
-resource "digitalocean_app" "bigben_service" {
-    spec {
-        name = "bigben"
-        region = "nyc1"
+var private_key_path {
+    type = string
+    default = "~/.ssh/bigben"
+}
 
-        worker {
-            name = "bigben"
+resource "digitalocean_ssh_key" "bigben_pub_key" {
+    name = "bigben"
+    public_key = file(var.public_key_path)
+}
 
-            run_command = "node index.js schedule --cron '* * * * *'"
+resource "digitalocean_droplet" "bigben_droplet" {
+  image  = "debian-12-x64"
+  size = "s-1vcpu-512mb-10gb"
+  name =  "bigben"
+  region = "nyc3"
+  monitoring = true
+  ssh_keys = [
+    digitalocean_ssh_key.bigben_pub_key.id
+  ]
 
-            github {
-                repo = "Glizzus/discord-bigben"
-                branch = "main"
-                deploy_on_push = true
-            }
-
-            env {
-                key = "NODE_ENV"
-                value = "production"
-                scope = "RUN_AND_BUILD_TIME"
-                type = "GENERAL"
-            }
-
-            env {
-                key = "BIGBEN_AUDIO_FILE"
-                value = "https://${local.mp3_bucket_url}"
-                scope = "RUN_TIME"
-                type = "GENERAL"
-            }
-
-            env {
-                key = "BIGBEN_TOKEN"
-                value = var.bigben_token
-                scope = "RUN_TIME"
-                type = "SECRET"
-            }
-
-            env {
-                key = "BIGBEN_GUILD_ID"
-                value = var.bigben_guild_id
-                scope = "RUN_TIME"
-                type = "SECRET"
-            }
-
-            env {
-                key = "DEBUG"
-                value = var.debug
-                scope = "RUN_TIME"
-                type = "GENERAL"
-            }
-        }
-    }
+  connection {
+    host = self.ipv4_address
+    user = "root"
+    type = "ssh"
+    private_key = file(var.private_key_path)
+    timeout = "2m"
+  }
 }
