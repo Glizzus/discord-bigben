@@ -117,8 +117,11 @@ export default async function toll() {
   if (subscription) {
     debugLogger("Playing audio");
     audioPlayer.play(makeResouce());
-    await new Promise((res) => {
-      audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, res);
+    await new Promise<void>((res) => {
+      audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, () => {
+        audioPlayer.removeAllListeners(discordVoice.AudioPlayerStatus.Idle);
+        res();
+      });
     });
     debugLogger("Audio finished playing");
   }
