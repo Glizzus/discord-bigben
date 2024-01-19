@@ -1,12 +1,12 @@
 {
   "scripts": {
     "build": "npx tsc",
-    "start:cron": "node dist/bin/cron.js",
-    "start:once": "node dist/bin/once.js",
+    "start": "node dist/cli.js",
     "serve": "npm run build && npm run start"
   },
   "dependencies": {
     "@discordjs/voice": "^0.16.0",
+    "commander": "^11.1.0",
     "cron": "^2.3.0",
     "debug": "^4.3.4",
     "discord.js": "^14.9.0",

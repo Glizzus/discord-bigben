@@ -3,6 +3,9 @@ version: "3.5"
 services:
   bigben:
     build: .
-    env_file:
-      - .env
-    restart: always
+    environment:
+      - TOKEN=${BIGBEN_TOKEN}
+      - GUILD_ID=${BIGBEN_GUILD_ID}
+      - AUDIO_FILE=${BIGBEN_AUDIO_FILE}
+      - DEBUG=${BIGBEN_DEBUG}
+    command: ["schedule", "cron", "${BIGBEN_CRON:-0 * * * *}"]
