@@ -1,6 +1,7 @@
 import { CronJob } from 'cron';
 import debugLogger from '../debugLogger';
 import run from '../toll';
+import Logger from '../Logger';
 
 export default function scheduleHandler(options: { cron?: string }) {
     debugLogger("Starting schedule handler");
@@ -19,7 +20,7 @@ export default function scheduleHandler(options: { cron?: string }) {
             try {
                 await run();
             } catch (e) {
-                debugLogger("Error running cron job: " + e);
+                Logger.info("Error running cron job: " + e);
             }
         })();
     }

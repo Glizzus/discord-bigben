@@ -3,6 +3,8 @@ import Config from "./Config";
 import * as discordVoice from "@discordjs/voice";
 import Logger from "./Logger";
 import debug from 'debug';
+import { Readable } from "stream";
+import axios from "axios";
 
 const debugLogger = debug('discord-bigben');
 
@@ -91,7 +93,7 @@ export default async function toll() {
     return;
   }
 
-  const resource = discordVoice.createAudioResource(Config.audioFile, {
+  const makeResouce = () => discordVoice.createAudioResource(Config.audioFile, {
     metadata: {
       title: "The Bell Chimes",
     }
@@ -113,22 +115,19 @@ export default async function toll() {
 
   const subscription = connection.subscribe(audioPlayer);
   if (subscription) {
-    await new Promise<void>((resolve, reject) => {
-      audioPlayer.play(resource);
-      audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, () => {
-        Promise.all(
-          members.map((member) => {
-            debugLogger(`Unmuting member ${member.user.username}`);
-            return member.voice.setMute(false, "The bell no longer tolls");
-          })
-        )
-        .then(() => {
-          audioPlayer.removeAllListeners(discordVoice.AudioPlayerStatus.Idle);
-          resolve();
-        })
-        .catch((e) => reject(e));
-      });
-    }); 
-    connection.disconnect();
+    debugLogger("Playing audio");
+    audioPlayer.play(makeResouce());
+    await new Promise((res) => {
+      audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, res);
+    });
+    debugLogger("Audio finished playing");
   }
+  await Promise.all(
+    members.map((member) => {
+      debugLogger(`Unmuting member ${member.user.username}`);
+      return member.voice.setMute(false, "The bell is done tolling");
+    })
+  );
+  debugLogger("Disconnecting from voice channel");
+  connection.disconnect();
 }
