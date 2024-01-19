@@ -55,7 +55,7 @@ resource "digitalocean_project" "bigben" {
     environment = "Production"
 
     resources = [
-        digitalocean_app.bigben_service.urn,
+        //digitalocean_app.bigben_service.urn,
         digitalocean_spaces_bucket.bigben.urn,
     ]
 }
@@ -78,6 +78,7 @@ locals {
     mp3_bucket_url = "${digitalocean_spaces_bucket.bigben.bucket_domain_name}/${digitalocean_spaces_bucket_object.bigben_mp3.key}"
 }
 
+/*
 resource "digitalocean_app" "bigben_service" {
     spec {
         name = "bigben"
@@ -126,3 +127,4 @@ resource "digitalocean_app" "bigben_service" {
         }
     }
 }
+*/

@@ -77,6 +77,27 @@ async function getMaxVoiceChannel(guild: discord.Guild): Promise<discord.VoiceCh
   return maxChannel;
 }
 
+async function* streamToAsyncIterable<T>(stream: ReadableStream<T>): AsyncIterable<T> {
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      yield value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+function blobToNodeStream(blob: Blob): Readable {
+  const stream = blob.stream();
+  const asyncIterable = streamToAsyncIterable(stream);
+  return Readable.from(asyncIterable);
+}
+
 export default async function toll() {
 
   const client = new discord.Client(options);
@@ -93,7 +114,11 @@ export default async function toll() {
     return;
   }
 
-  const makeResouce = () => discordVoice.createAudioResource(Config.audioFile, {
+  const response = await fetch(Config.audioFile);
+  const blob = await response.blob();
+  const stream = blobToNodeStream(blob);
+
+  const audioResource = discordVoice.createAudioResource(stream, {
     metadata: {
       title: "The Bell Chimes",
     }
@@ -113,7 +138,7 @@ export default async function toll() {
     })
   );
 
-  audioPlayer.play(makeResouce());
+  audioPlayer.play(audioResource);
 
   const subscription = connection.subscribe(audioPlayer);
   if (subscription === undefined) {
@@ -124,7 +149,7 @@ export default async function toll() {
   debugLogger("Waiting for audio player to start playing");
   await discordVoice.entersState(audioPlayer, discordVoice.AudioPlayerStatus.Playing, 5_000);
   debugLogger("Waiting for audio player to stop playing");
-  await discordVoice.entersState(audioPlayer, discordVoice.AudioPlayerStatus.Idle, 1_000);
+  await discordVoice.entersState(audioPlayer, discordVoice.AudioPlayerStatus.Idle, 60_000);
 
   await Promise.all(
     members.map((member) => {
