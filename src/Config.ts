@@ -13,15 +13,15 @@ if (environment === Environment.Development) {
 }
 
 if (!process.env["BIGBEN_TOKEN"]) {
-  throw new Error("TOKEN is undefined. Unable to continue");
+  throw new Error("BIGBEN_TOKEN is undefined. Unable to continue");
 }
 
 if (!process.env["BIGBEN_GUILD_ID"]) {
-  throw new Error("GUILD_ID is undefined");
+  throw new Error("BIGBEN_GUILD_ID is undefined");
 }
 
 if (!process.env["BIGBEN_AUDIO_FILE"]) {
-  throw new Error("AUDIO_FILE is undefined");
+  throw new Error("BIGBEN_AUDIO_FILE is undefined");
 }
 
 const Config = {

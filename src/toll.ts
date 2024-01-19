@@ -122,7 +122,10 @@ export default async function toll() {
             return member.voice.setMute(false, "The bell no longer tolls");
           })
         )
-        .then(() => resolve())
+        .then(() => {
+          audioPlayer.removeAllListeners(discordVoice.AudioPlayerStatus.Idle);
+          resolve();
+        })
         .catch((e) => reject(e));
       });
     }); 

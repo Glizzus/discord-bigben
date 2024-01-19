@@ -19,4 +19,4 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=build /usr/src/app/dist ./
-ENTRYPOINT [ "node", "cli.js" ]
+ENTRYPOINT [ "node", "index.js" ]

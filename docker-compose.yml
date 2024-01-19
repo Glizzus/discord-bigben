@@ -4,8 +4,10 @@ services:
   bigben:
     build: .
     environment:
-      - TOKEN=${BIGBEN_TOKEN}
-      - GUILD_ID=${BIGBEN_GUILD_ID}
-      - AUDIO_FILE=${BIGBEN_AUDIO_FILE}
-      - DEBUG=${BIGBEN_DEBUG}
-    command: ["schedule", "cron", "${BIGBEN_CRON:-0 * * * *}"]
+      - BIGBEN_TOKEN=${BIGBEN_TOKEN}
+      - BIGBEN_GUILD_ID=${BIGBEN_GUILD_ID}
+      - BIGBEN_AUDIO_FILE=${BIGBEN_AUDIO_FILE}
+
+      - DEBUG=${DEBUG}
+    command: ["run"]
+
