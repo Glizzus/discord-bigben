@@ -113,24 +113,43 @@ export default async function toll() {
     })
   );
 
-  const subscription = connection.subscribe(audioPlayer);
-  if (subscription) {
-    debugLogger("Playing audio");
-    audioPlayer.play(makeResouce());
-    await new Promise<void>((res) => {
-      audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, () => {
-        audioPlayer.removeAllListeners(discordVoice.AudioPlayerStatus.Idle);
-        res();
-      });
+
+  audioPlayer.play(makeResouce());
+
+  audioPlayer.on('error', (e) => {
+    Logger.error(`Error playing audio: ${e.message}`);
+  })
+
+  const songFinishes = new Promise<void>((res) => {
+    audioPlayer.on(discordVoice.AudioPlayerStatus.Idle, () => {
+      debugLogger("Audio player is idle");
+      audioPlayer.removeAllListeners(discordVoice.AudioPlayerStatus.Idle);
+      res();
     });
-    debugLogger("Audio finished playing");
+  })
+
+  const timeout = new Promise<void>((res) => {
+    setTimeout(() => {
+      debugLogger("Timeout reached");
+      res();
+    }, 10000);
+  });
+
+  const subscription = connection.subscribe(audioPlayer);
+  if (subscription === undefined) {
+    debugLogger("Unable to subscribe to voice connection");
+    return;
   }
+
+  await Promise.race([songFinishes, timeout]);
+
   await Promise.all(
     members.map((member) => {
       debugLogger(`Unmuting member ${member.user.username}`);
       return member.voice.setMute(false, "The bell is done tolling");
     })
   );
+
   debugLogger("Disconnecting from voice channel");
   connection.disconnect();
 }
