@@ -55,7 +55,7 @@ resource "digitalocean_project" "bigben" {
     environment = "Production"
 
     resources = [
-        digitalocean_app.bigben_service.urn,
+        digitalocean_droplet.bigben_droplet.urn,
         digitalocean_spaces_bucket.bigben.urn,
     ]
 }
@@ -82,12 +82,12 @@ locals {
     mp3_bucket_url = "${digitalocean_spaces_bucket.bigben.bucket_domain_name}/${digitalocean_spaces_bucket_object.seeded_mp3.key}"
 }
 
-var public_key_path {
+variable public_key_path {
     type = string
     default = "~/.ssh/bigben.pub"
 }
 
-var private_key_path {
+variable private_key_path {
     type = string
     default = "~/.ssh/bigben"
 }
@@ -101,7 +101,7 @@ resource "digitalocean_droplet" "bigben_droplet" {
   image  = "debian-12-x64"
   size = "s-1vcpu-512mb-10gb"
   name =  "bigben"
-  region = "nyc3"
+  region = "nyc1"
   monitoring = true
   ssh_keys = [
     digitalocean_ssh_key.bigben_pub_key.id
