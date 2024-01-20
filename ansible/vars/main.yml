@@ -1,0 +1,3 @@
+node_version: "20.11.0"
+
+bigben_cron: "* * * * *"

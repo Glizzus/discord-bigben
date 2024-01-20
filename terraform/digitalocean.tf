@@ -115,3 +115,7 @@ resource "digitalocean_droplet" "bigben_droplet" {
     timeout = "2m"
   }
 }
+
+output "bigben_audio_file" {
+    value = local.mp3_bucket_url
+}
