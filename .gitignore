@@ -5,3 +5,5 @@ logs/
 *.env
 
 tsconfig.tsbuildinfo
+
+bigben.json

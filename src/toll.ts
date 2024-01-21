@@ -1,12 +1,9 @@
 import * as discord from "discord.js";
-import Config from "./Config";
 import * as discordVoice from "@discordjs/voice";
+import Config from "./Config";
 import Logger from "./Logger";
-import debug from 'debug';
+import debugLogger from "./debugLogger";
 import { Readable } from "stream";
-import axios from "axios";
-
-const debugLogger = debug('discord-bigben');
 
 const options: discord.ClientOptions = {
   intents: [
@@ -14,6 +11,9 @@ const options: discord.ClientOptions = {
     discord.GatewayIntentBits.GuildMembers,
     discord.GatewayIntentBits.GuildVoiceStates,
   ],
+  rest: {
+    api: "http://localhost:8080/api"
+  }
 }
 
 const audioPlayer = discordVoice.createAudioPlayer({
@@ -21,7 +21,6 @@ const audioPlayer = discordVoice.createAudioPlayer({
     noSubscriber: discordVoice.NoSubscriberBehavior.Stop,
   },
 });
-
 
 async function login(client: discord.Client, token: string) {
   client.login(token);

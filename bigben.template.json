@@ -1,0 +1,19 @@
+{
+    "servers": [
+        {
+            "id": "123456789",
+            "intervals": [
+                {
+                    "cron": "0 1-23 * * *",
+                    "audio": "https://audiourl.com/hourly.mp3",
+                    "description": "Play Big Ben every hour except midnight"
+                },
+                {
+                    "cron": "0 0 * * *",
+                    "audio": "https://audiourl.com/midnight.mp3",
+                    "description": "Play the special 12 chimes at midnight"
+                }
+            ]
+        }
+    ]
+}

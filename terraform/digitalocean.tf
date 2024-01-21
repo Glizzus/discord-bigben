@@ -116,6 +116,31 @@ resource "digitalocean_droplet" "bigben_droplet" {
   }
 }
 
+resource "digitalocean_firewall" "bigben_firewall" {
+    name = "bigben-firewall"
+    droplet_ids = [
+        digitalocean_droplet.bigben_droplet.id
+    ]
+
+    inbound_rule {
+        protocol = "tcp"
+        port_range = "22"
+        source_addresses = ["0.0.0.0/0", "::/0"]
+    }
+
+    outbound_rule {
+        protocol = "tcp"
+        port_range = "1-65535"
+        destination_addresses = ["0.0.0.0/0", "::/0"]
+    }
+
+    outbound_rule {
+        protocol = "udp"
+        port_range = "1-65535"
+        destination_addresses = ["0.0.0.0/0", "::/0"]
+    }
+}
+
 output "bigben_audio_file" {
-    value = local.mp3_bucket_url
+    value = "https://${local.mp3_bucket_url}"
 }

@@ -2,6 +2,7 @@
   hosts: all
   vars_files:
     - vars/main.yml
+    - vars/custom.yml
   tasks:
     - name: Ensure the GPG key for NodeJS Exists
       ansible.builtin.apt_key:
@@ -10,15 +11,19 @@
 
     - name: Add NodeJS repository
       ansible.builtin.apt_repository:
-        repo: "https://deb.nodesource.com/node_{{ nodejs_version }} {{ ansible_distribution_release }} main"
+        repo: "deb https://deb.nodesource.com/node_{{ nodejs_version }}.x {{ ansible_distribution_release }} main"
         state: present
         update_cache: true
 
     - name: Install NodeJS
       ansible.builtin.apt:
-        name: nodejs
+        name: "{{ item }}"
         state: present
         update_cache: true
+      with_items:
+        - nodejs
+        - git
+        - jq
 
     - name: Install pm2
       community.general.npm:
@@ -46,20 +51,12 @@
       args:
         chdir: "/opt/bigben"
 
-    - name: Check if Application is already on PM2
-      ansible.builtin.command:
-        cmd: pm2 jlist
-      register: pm2_list
-      changed_when: false
-      ignore_errors: true
-
     - name: Start Application with PM2
       ansible.builtin.command:
-        cmd: "pm2 reload npm --name 'bigben' -- start schedule --cron ${{ bigben_cron }}"
+        cmd: "pm2 start -f /opt/bigben/dist/index.js --name 'bigben' -- schedule --cron '{{ bigben_cron }}'"
       args:
         chdir: "/opt/bigben"
-      when: "'bigben' not in pm2_list.stdout"
-      changed_when: false
+      changed_when: true
       environment:
         NODE_ENV: production
         BIGBEN_TOKEN: "{{ bigben_token }}"

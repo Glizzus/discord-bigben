@@ -1,3 +1,3 @@
-node_version: "20.11.0"
+nodejs_version: "20"
 
-bigben_cron: "* * * * *"
+bigben_cron: "0 * * * *"

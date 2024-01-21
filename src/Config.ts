@@ -25,10 +25,30 @@ if (!process.env["BIGBEN_AUDIO_FILE"]) {
   throw new Error("BIGBEN_AUDIO_FILE is undefined");
 }
 
+/**
+ * The configuration for the bot.
+ */
 const Config = {
+
+  /**
+   * The token to use to log in to Discord.
+   */
   token: process.env.BIGBEN_TOKEN,
+
+  /**
+   * The guild ID to connect to.
+   */
   guildId: process.env.BIGBEN_GUILD_ID,
+
+  /**
+   * The audio file to play. This has to be a URL as of now.
+   */
   audioFile: process.env.BIGBEN_AUDIO_FILE,
+
+  /**
+   * The environment we are running in.
+   * See {@link Environment} for more information.
+   */
   environment,
 } as const
 
