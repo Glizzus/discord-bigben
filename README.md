@@ -1,7 +1,7 @@
 # The bell tolls...
 
 1. The bot joins the channel with the most users in it according
-to the given cron pattern
+   to the given cron pattern
 
 2. The bot mutes everybody but itself
 
@@ -32,8 +32,3 @@ The [.env template](/.env.template) details all of the required variables.
 Notes
 
 - The cron pattern is based on the extended [node cron](https://www.npmjs.com/package/cron) syntax
-
-
-
-
-

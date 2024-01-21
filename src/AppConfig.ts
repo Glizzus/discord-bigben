@@ -2,11 +2,13 @@ import dotenv from "dotenv";
 import Environment from "./Environment";
 import Logger from "./Logger";
 
-const environment = process.env["NODE_ENV"]?.toLowerCase() ?? (() => {
-  const defaultEnv = Environment.Development;
-  console.log(`NODE_ENV is undefined... defaulting to ${defaultEnv}`)
-  return defaultEnv;
-})();
+const environment =
+  process.env["NODE_ENV"]?.toLowerCase() ??
+  (() => {
+    const defaultEnv = Environment.Development;
+    console.log(`NODE_ENV is undefined... defaulting to ${defaultEnv}`);
+    return defaultEnv;
+  })();
 
 // We are only going to respect the .env file in development mode.
 if (environment === Environment.Development) {
@@ -21,7 +23,6 @@ if (!process.env["BIGBEN_TOKEN"]) {
  * The configuration for the bot.
  */
 const AppConfig = {
-
   /**
    * The token to use to log in to Discord.
    */
@@ -32,7 +33,7 @@ const AppConfig = {
    * See {@link Environment} for more information.
    */
   environment,
-} as const
+} as const;
 
 Logger.info("Loaded config");
 Logger.info(`Environment: ${AppConfig.environment}`);

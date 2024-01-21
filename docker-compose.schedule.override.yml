@@ -1,6 +1,5 @@
-version: '3.5'
+version: "3.5"
 
 services:
   bigben:
     command: ["schedule", "--cron", "${BIGBEN_CRON:-0 * * * *}"]
-

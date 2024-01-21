@@ -1,16 +1,19 @@
-import * as discord from 'discord.js'
-import debugLogger from './debugLogger';
-import winston from 'winston';
-import ScheduleConfig from './ScheduleConfig';
-import Worker from './Worker';
+import * as discord from "discord.js";
+import debugLogger from "./debugLogger";
+import winston from "winston";
+import ScheduleConfig from "./ScheduleConfig";
+import Worker from "./Worker";
 
 export default class Orchestrator {
-
   private readonly client: discord.Client;
   private readonly logger: winston.Logger;
   private readonly scheduleConfig: ScheduleConfig;
 
-  constructor(client: discord.Client, logger: winston.Logger, scheduleConfig: ScheduleConfig) {
+  constructor(
+    client: discord.Client,
+    logger: winston.Logger,
+    scheduleConfig: ScheduleConfig,
+  ) {
     this.client = client;
     this.logger = logger;
     this.scheduleConfig = scheduleConfig;
@@ -21,15 +24,15 @@ export default class Orchestrator {
     debugLogger("Attempting to log in");
 
     const successPromise = new Promise<void>((res) => {
-    this.client.once(discord.Events.ClientReady, (c) => {
-      this.logger.info(`Logged in as ${c.user.tag}`);
-      res();
+      this.client.once(discord.Events.ClientReady, (c) => {
+        this.logger.info(`Logged in as ${c.user.tag}`);
+        res();
       });
     });
 
     const errorListener = (_: unknown, rej: (error: Error) => void) => {
       this.client.once(discord.Events.Error, rej);
-    }; 
+    };
     const errorPromise = new Promise<void>(errorListener);
 
     await Promise.race([successPromise, errorPromise]);
@@ -39,7 +42,6 @@ export default class Orchestrator {
   }
 
   async run() {
-
     if (!this.client.isReady()) {
       const message = "Client is not ready. Please call login() first";
       throw new Error(message);
@@ -51,7 +53,7 @@ export default class Orchestrator {
         server.intervals.map(async (interval) => {
           const worker = new Worker(guild, interval);
           await worker.run();
-        })
+        }),
       );
     }
   }

@@ -2,8 +2,8 @@
  * The type of audio resource to play.
  */
 enum AudioResourceType {
-    File,
-    Stream
+  File,
+  Stream,
 }
 export default AudioResourceType;
 
@@ -13,13 +13,13 @@ export default AudioResourceType;
  * @returns the type of audio resource
  */
 export function determineType(resourceLocator: string) {
-    try {
-        const url = new URL(resourceLocator);
-        if (url.protocol === "file:") {
-            return AudioResourceType.File;
-        }
-        return AudioResourceType.Stream;
-    } catch (error) {
-        return AudioResourceType.File;
+  try {
+    const url = new URL(resourceLocator);
+    if (url.protocol === "file:") {
+      return AudioResourceType.File;
     }
+    return AudioResourceType.Stream;
+  } catch (error) {
+    return AudioResourceType.File;
+  }
 }

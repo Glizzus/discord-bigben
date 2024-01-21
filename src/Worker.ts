@@ -1,14 +1,13 @@
-import discord from 'discord.js';
-import * as discordVoice from '@discordjs/voice';
-import { Readable } from 'stream';
+import discord from "discord.js";
+import * as discordVoice from "@discordjs/voice";
+import { Readable } from "stream";
 
-import debugLogger from './debugLogger';
+import debugLogger from "./debugLogger";
 import AudioResourceType, { determineType } from "./AudioResourceType";
-import { ScheduleInterval } from './ScheduleConfig';
-import cron from 'cron';
+import { ScheduleInterval } from "./ScheduleConfig";
+import cron from "cron";
 
 export default class Worker {
-
   private _cachedAudioPlayer: discordVoice.AudioPlayer | null = null;
   private get audioPlayer() {
     if (this._cachedAudioPlayer === null) {
@@ -46,7 +45,7 @@ export default class Worker {
       members.map((member) => {
         this.instanceDebug(`Muting member ${member.user.username}`);
         return member.voice.setMute(true, "The bell tolls");
-      })
+      }),
     );
   }
 
@@ -55,7 +54,7 @@ export default class Worker {
       members.map((member) => {
         this.instanceDebug(`Unmuting member ${member.user.username}`);
         return member.voice.setMute(false, "The bell is done tolling");
-      })
+      }),
     );
   }
 
@@ -91,12 +90,20 @@ export default class Worker {
     }
 
     this.instanceDebug("Waiting for audio player to start playing");
-    await discordVoice.entersState(this.audioPlayer, discordVoice.AudioPlayerStatus.Playing, 20_000);
+    await discordVoice.entersState(
+      this.audioPlayer,
+      discordVoice.AudioPlayerStatus.Playing,
+      20_000,
+    );
     this.instanceDebug("Waiting for audio player to stop playing");
-    await discordVoice.entersState(this.audioPlayer, discordVoice.AudioPlayerStatus.Idle, 30_000);
- 
+    await discordVoice.entersState(
+      this.audioPlayer,
+      discordVoice.AudioPlayerStatus.Idle,
+      30_000,
+    );
+
     await this.unmuteAll(members);
-  
+
     this.instanceDebug("Disconnecting from voice channel");
     connection.destroy();
   }
@@ -112,11 +119,11 @@ export default class Worker {
           } catch (e) {
             this.instanceDebug(`Error running job: ${e}`);
           }
-        })(); 
+        })();
       },
       undefined,
       true,
-      'America/Chicago'
+      "America/Chicago",
     );
     job.start();
     // Cron job blocks here forever
@@ -124,9 +131,9 @@ export default class Worker {
   }
 
   private getMaxVoiceChannel(): discord.VoiceChannel | null {
-    this.instanceDebug("Finding voice channels")
+    this.instanceDebug("Finding voice channels");
     // We could use a filter, but I don't want to typecast. A for loop is fine.
-    const voiceChannels = []
+    const voiceChannels = [];
     for (const [_, channel] of this.guild.channels.cache) {
       if (channel.type === discord.ChannelType.GuildVoice) {
         voiceChannels.push(channel);
@@ -137,7 +144,10 @@ export default class Worker {
     let sizeCandidate = 0;
 
     for (const channel of voiceChannels) {
-      const { name, members: { size } } = channel;
+      const {
+        name,
+        members: { size },
+      } = channel;
       if (channel.members.size > sizeCandidate) {
         this.instanceDebug(`Found channel ${name} with ${size} members`);
         maxChannel = channel;
