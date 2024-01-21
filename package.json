@@ -21,6 +21,6 @@
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.2"
   }
 }

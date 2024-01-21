@@ -1,26 +1,30 @@
-import commander from 'commander';
+import discord from 'discord.js';
 
-import runHandler from './handlers/run';
-import scheduleHandler from './handlers/schedule';
+import Orchestrator from './Orchestrator';
+import Logger from './Logger';
+import { retrieveScheduleConfig } from './ScheduleConfig';
+import AppConfig from './AppConfig';
 
-const program = new commander.Command();
-program
-  .name("discord-bigben")
-  .description("A bot that joins a discord channel and plays a sound")
-
-program
-  .command("run")
-  .description("Run the bot one time, then exit")
-  .action(runHandler);
-
-program
-  .command("schedule")
-  .description("Run the bot")
-  .requiredOption("-c, --cron <cron>", "Cron string to run the bot on")
-  .action(scheduleHandler)
-
-program.parse(process.argv);
-
-if (program.args.length === 0) {
-  program.help();
+const options: discord.ClientOptions = {
+  intents: [
+    discord.GatewayIntentBits.Guilds,
+    discord.GatewayIntentBits.GuildMembers,
+    discord.GatewayIntentBits.GuildVoiceStates,
+  ]
 }
+
+async function main() {
+  const client = new discord.Client(options);
+
+  const scheduleConfig = retrieveScheduleConfig("bigben.json");
+  if (!scheduleConfig) {
+    Logger.error("Unable to retrieve schedule config");
+    process.exit(1);
+  }
+
+  const orchestrator = new Orchestrator(client, Logger, scheduleConfig);
+  await orchestrator.login(AppConfig.token);
+  await orchestrator.run();
+}
+
+main()

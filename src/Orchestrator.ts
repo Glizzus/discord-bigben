@@ -1,21 +1,22 @@
 import * as discord from 'discord.js'
-import * as discordVoice from '@discordjs/voice';
 import debugLogger from './debugLogger';
 import winston from 'winston';
-import AudioResourceType, { determineType } from './AudioResourceType';
-import { Readable } from 'stream';
+import ScheduleConfig from './ScheduleConfig';
+import Worker from './Worker';
 
-class Orchestrator {
+export default class Orchestrator {
 
   private readonly client: discord.Client;
   private readonly logger: winston.Logger;
+  private readonly scheduleConfig: ScheduleConfig;
 
-  constructor(client: discord.Client, logger: winston.Logger) {
+  constructor(client: discord.Client, logger: winston.Logger, scheduleConfig: ScheduleConfig) {
     this.client = client;
     this.logger = logger;
+    this.scheduleConfig = scheduleConfig;
   }
 
-  public async run(token: string) {
+  public async login(token: string) {
     this.client.login(token);
     debugLogger("Attempting to log in");
 
@@ -36,87 +37,22 @@ class Orchestrator {
     // By this point, we have logged in. We can undo the error listener.
     this.client.removeListener(discord.Events.Error, errorListener);
   }
-}
 
-class Worker {
+  async run() {
 
-  private _cachedAudioPlayer: discordVoice.AudioPlayer | null = null;
-  private get audioPlayer() {
-    if (this._cachedAudioPlayer === null) {
-      this._cachedAudioPlayer = discordVoice.createAudioPlayer({
-        behaviors: {
-          noSubscriber: discordVoice.NoSubscriberBehavior.Stop,
-        },
-      });
-    }
-    return this._cachedAudioPlayer;
-  }
-
-  private readonly guild: discord.Guild;
-  private readonly audioFile: string;
-
-  constructor(guild: discord.Guild, audioFile: string) {
-    this.guild = guild;
-    this.audioFile = audioFile;
-  }
-
-  private getMaxVoiceChannel(): discord.VoiceChannel | null {
-    debugLogger("Finding voice channels")
-    // We could use a filter, but I don't want to typecast. A for loop is fine.
-    const voiceChannels = []
-    for (const [_, channel] of this.guild.channels.cache) {
-      if (channel.type === discord.ChannelType.GuildVoice) {
-        voiceChannels.push(channel);
-      }
+    if (!this.client.isReady()) {
+      const message = "Client is not ready. Please call login() first";
+      throw new Error(message);
     }
 
-    let maxChannel: discord.VoiceChannel | null = null;
-    let sizeCandidate = 0;
-
-    for (const channel of voiceChannels) {
-      const { name, members: { size } } = channel;
-      if (channel.members.size > sizeCandidate) {
-        debugLogger(`Found channel ${name} with ${size} members`);
-        maxChannel = channel;
-        sizeCandidate = size;
-      }
+    for (const server of this.scheduleConfig.servers) {
+      const guild = await this.client.guilds.fetch(server.id);
+      await Promise.all(
+        server.intervals.map(async (interval) => {
+          const worker = new Worker(guild, interval);
+          await worker.run();
+        })
+      );
     }
-    return maxChannel;
-  }
-
-  private async resourceFromUrl() {
-    const resourceType = determineType(this.audioFile);
-    switch (resourceType) {
-      case AudioResourceType.File:
-        return discordVoice.createAudioResource(this.audioFile);
-      
-      case AudioResourceType.Stream: {
-        const stream = await this.urlToNodeStream(this.audioFile);
-        return discordVoice.createAudioResource(stream);
-      }
-    }
-  }
-
-  private async *streamToAsyncIterable<T>(stream: ReadableStream<T>) {
-    const reader = stream.getReader();
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          return;
-        }
-        yield value;
-      }
-    } finally {
-      reader.releaseLock();
-    }
-  }
-
-  private async urlToNodeStream(url: string) {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const stream = blob.stream();
-    const asyncIterable = this.streamToAsyncIterable(stream);
-    return Readable.from(asyncIterable);
   }
 }
