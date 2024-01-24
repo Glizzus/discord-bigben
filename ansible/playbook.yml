@@ -82,7 +82,7 @@
       changed_when: true
       environment:
         NODE_ENV: production
-        PORT: "{{ port }}"
+        BIGBEN_PORT: "{{ bigben_port }}"
 
         BIGBEN_TOKEN: "{{ bigben_token }}"
         BIGBEN_GUILD_ID: "{{ bigben_guild_id }}"

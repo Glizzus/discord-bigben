@@ -1,4 +1,4 @@
 node_version: "20"
 
 bigben_mongo_uri: "mongodb://localhost:27017/bigben"
-port: 80
+bigben_port: 80

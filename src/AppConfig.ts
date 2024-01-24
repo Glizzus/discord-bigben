@@ -10,12 +10,12 @@ const environment =
     return defaultEnv;
   })();
 
-const port = process.env["PORT"] ?? (() => {
+const port = process.env["BIGBEN_PORT"] ?? (() => {
   if (environment !== Environment.Development) {
-    throw new Error("PORT is undefined. Unable to continue");
+    throw new Error("BIGBEN_PORT is undefined. Unable to continue");
   }
   const defaultPort = 3000;
-  console.log(`PORT is undefined... defaulting to ${defaultPort}`);
+  console.log(`BIGBEN_PORT is undefined... defaulting to ${defaultPort}`);
   return defaultPort;
 })();
 
