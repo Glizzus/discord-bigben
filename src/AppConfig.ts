@@ -10,6 +10,15 @@ const environment =
     return defaultEnv;
   })();
 
+const port = process.env["PORT"] ?? (() => {
+  if (environment !== Environment.Development) {
+    throw new Error("PORT is undefined. Unable to continue");
+  }
+  const defaultPort = 3000;
+  console.log(`PORT is undefined... defaulting to ${defaultPort}`);
+  return defaultPort;
+})();
+
 // We are only going to respect the .env file in development mode.
 if (environment === Environment.Development) {
   dotenv.config();
@@ -33,6 +42,11 @@ const AppConfig = {
    * The token to use to log in to Discord.
    */
   token: process.env.BIGBEN_TOKEN,
+
+  /**
+   * The port to listen on.
+   */
+  port,
 
   /**
    * The URI to use to connect to MongoDB.

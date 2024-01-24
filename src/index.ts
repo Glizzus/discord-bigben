@@ -50,8 +50,8 @@ async function main() {
     res.sendStatus(200);
   });
 
-  app.listen(3000, () => {
-    Logger.info("Listening on port 3000");
+  app.listen(AppConfig.port, () => {
+    Logger.info(`Listening on port ${AppConfig.port}`);
   });
 
   const orchestrator = new Orchestrator(client, Logger, configStorage);
