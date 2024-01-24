@@ -19,6 +19,12 @@ if (!process.env["BIGBEN_TOKEN"]) {
   throw new Error("BIGBEN_TOKEN is undefined. Unable to continue");
 }
 
+const mongoUri = process.env["BIGBEN_MONGO_URI"] ?? (() => {
+  const defaultUri = "mongodb://localhost:27017";
+  console.log(`MONGO_URI is undefined... defaulting to ${defaultUri}`);
+  return defaultUri;
+})();
+
 /**
  * The configuration for the bot.
  */
@@ -27,6 +33,11 @@ const AppConfig = {
    * The token to use to log in to Discord.
    */
   token: process.env.BIGBEN_TOKEN,
+
+  /**
+   * The URI to use to connect to MongoDB.
+   */
+  mongoUri,
 
   /**
    * The environment we are running in.

@@ -20,6 +20,8 @@ export default class Worker {
     return this._cachedAudioPlayer;
   }
 
+  private job: cron.CronJob | null = null;
+
   private readonly guild: discord.Guild;
 
   private readonly cronExpression: string;
@@ -108,7 +110,7 @@ export default class Worker {
     connection.destroy();
   }
 
-  public async run() {
+  public run() {
     this.instanceDebug(`Running on cron expression ${this.cronExpression}`);
     const job = new cron.CronJob(
       this.cronExpression,
@@ -125,9 +127,8 @@ export default class Worker {
       true,
       "America/Chicago",
     );
+    this.job = job;
     job.start();
-    // Cron job blocks here forever
-    return new Promise(() => {});
   }
 
   private getMaxVoiceChannel(): discord.VoiceChannel | null {
@@ -193,5 +194,9 @@ export default class Worker {
     const asyncIterable = this.streamToAsyncIterable(stream);
     const nodeStream = Readable.from(asyncIterable);
     return nodeStream;
+  }
+
+  public stop() {
+    this.job?.stop();
   }
 }

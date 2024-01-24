@@ -128,6 +128,12 @@ resource "digitalocean_firewall" "bigben_firewall" {
         source_addresses = ["0.0.0.0/0", "::/0"]
     }
 
+    inbound_rule {
+        protocol = "tcp"
+        port_range = "80"
+        source_addresses = ["153.33.0.159"]
+    }
+
     outbound_rule {
         protocol = "tcp"
         port_range = "1-65535"
