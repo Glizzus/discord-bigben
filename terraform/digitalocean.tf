@@ -100,7 +100,7 @@ resource "digitalocean_ssh_key" "bigben_pub_key" {
 resource "digitalocean_droplet" "bigben_droplet" {
   # We need to use Debian 11 because MongoDB doesn't support Debian 12 yet
   image  = "debian-11-x64"
-  size = "s-1vcpu-512mb-10gb"
+  size = "s-1vcpu-1gb"
   name =  "bigben"
   region = "nyc1"
   monitoring = true

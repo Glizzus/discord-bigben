@@ -21,8 +21,12 @@
         name: mongodb-org
         state: present
         update_cache: true
-      notify:
-        - Start MongoDB
+
+    - name: Start MongoDB
+      ansible.builtin.service:
+        name: mongod
+        state: started
+        enabled: true
 
     - name: Import NodeSource GPG key
       ansible.builtin.apt_key:
@@ -43,7 +47,7 @@
       loop:
         - nodejs
         - git
-  
+
     - name: Install pm2
       community.general.npm:
         name: pm2
@@ -78,15 +82,9 @@
       changed_when: true
       environment:
         NODE_ENV: production
+        BIGBEN_PORT: "{{ bigben_port }}"
 
         BIGBEN_TOKEN: "{{ bigben_token }}"
         BIGBEN_GUILD_ID: "{{ bigben_guild_id }}"
         BIGBEN_AUDIO_FILE: "{{ bigben_audio_file }}"
         BIGBEN_MONGO_URI: "{{ bigben_mongo_uri }}"
-
-  handlers:
-    - name: Start MongoDB
-      ansible.builtin.service:
-        name: mongod
-        state: started
-        enabled: true

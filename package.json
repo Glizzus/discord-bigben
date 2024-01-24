@@ -1,6 +1,6 @@
 {
   "engines": {
-    "node": "20.11.0"
+    "node": "20.5.1"
   },
   "scripts": {
     "build": "npx tsc",
