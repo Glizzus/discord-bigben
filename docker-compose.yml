@@ -2,12 +2,21 @@ version: "3.5"
 
 services:
   bigben:
+    ports:
+      - 3000:3000
     build: .
     environment:
       - BIGBEN_TOKEN=${BIGBEN_TOKEN}
-      - BIGBEN_GUILD_ID=${BIGBEN_GUILD_ID}
-      - BIGBEN_AUDIO_FILE=${BIGBEN_AUDIO_FILE}
 
+      - BIGBEN_MONGO_URI=${BIGBEN_MONGO_URI:-mongodb://host.docker.internal:27017/bigben}
       - DEBUG=${DEBUG}
-    command: ["run"]
 
+  mongo:
+    image: mongo:6.0.13
+    ports:
+      - 27017:27017
+    volumes:
+      - bigben-mongo:/data/db
+
+volumes:
+  bigben-mongo:

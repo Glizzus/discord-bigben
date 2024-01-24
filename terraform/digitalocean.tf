@@ -55,7 +55,7 @@ resource "digitalocean_project" "bigben" {
     environment = "Production"
 
     resources = [
-        digitalocean_app.bigben_service.urn,
+        digitalocean_droplet.bigben_droplet.urn,
         digitalocean_spaces_bucket.bigben.urn,
     ]
 }
@@ -82,12 +82,12 @@ locals {
     mp3_bucket_url = "${digitalocean_spaces_bucket.bigben.bucket_domain_name}/${digitalocean_spaces_bucket_object.seeded_mp3.key}"
 }
 
-var public_key_path {
+variable public_key_path {
     type = string
     default = "~/.ssh/bigben.pub"
 }
 
-var private_key_path {
+variable private_key_path {
     type = string
     default = "~/.ssh/bigben"
 }
@@ -98,10 +98,11 @@ resource "digitalocean_ssh_key" "bigben_pub_key" {
 }
 
 resource "digitalocean_droplet" "bigben_droplet" {
-  image  = "debian-12-x64"
+  # We need to use Debian 11 because MongoDB doesn't support Debian 12 yet
+  image  = "debian-11-x64"
   size = "s-1vcpu-512mb-10gb"
   name =  "bigben"
-  region = "nyc3"
+  region = "nyc1"
   monitoring = true
   ssh_keys = [
     digitalocean_ssh_key.bigben_pub_key.id
@@ -116,6 +117,41 @@ resource "digitalocean_droplet" "bigben_droplet" {
   }
 }
 
+resource "digitalocean_firewall" "bigben_firewall" {
+    name = "bigben-firewall"
+    droplet_ids = [
+        digitalocean_droplet.bigben_droplet.id
+    ]
+
+    inbound_rule {
+        protocol = "tcp"
+        port_range = "22"
+        source_addresses = ["0.0.0.0/0", "::/0"]
+    }
+
+    inbound_rule {
+        protocol = "tcp"
+        port_range = "80"
+        source_addresses = ["153.33.0.159"]
+    }
+
+    outbound_rule {
+        protocol = "tcp"
+        port_range = "1-65535"
+        destination_addresses = ["0.0.0.0/0", "::/0"]
+    }
+
+    outbound_rule {
+        protocol = "udp"
+        port_range = "1-65535"
+        destination_addresses = ["0.0.0.0/0", "::/0"]
+    }
+}
+
 output "bigben_audio_file" {
-    value = local.mp3_bucket_url
+    value = "https://${local.mp3_bucket_url}"
+}
+
+output "droplet_ip" {
+    value = digitalocean_droplet.bigben_droplet.ipv4_address
 }

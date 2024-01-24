@@ -1,0 +1,4 @@
+*.retry
+
+vars/custom.yml
+inventory
