@@ -98,7 +98,8 @@ resource "digitalocean_ssh_key" "bigben_pub_key" {
 }
 
 resource "digitalocean_droplet" "bigben_droplet" {
-  image  = "debian-12-x64"
+  # We need to use Debian 11 because MongoDB doesn't support Debian 12 yet
+  image  = "debian-11-x64"
   size = "s-1vcpu-512mb-10gb"
   name =  "bigben"
   region = "nyc1"
@@ -149,4 +150,8 @@ resource "digitalocean_firewall" "bigben_firewall" {
 
 output "bigben_audio_file" {
     value = "https://${local.mp3_bucket_url}"
+}
+
+output "droplet_ip" {
+    value = digitalocean_droplet.bigben_droplet.ipv4_address
 }
