@@ -7,7 +7,12 @@ import AudioResourceType, { determineType } from "./AudioResourceType";
 import { ScheduleInterval } from "./ScheduleConfig";
 import cron from "cron";
 
+/**
+ * A worker runs one cron job.
+ * One server can have multiple workers.
+ */
 export default class Worker {
+
   private _cachedAudioPlayer: discordVoice.AudioPlayer | null = null;
   private get audioPlayer() {
     if (this._cachedAudioPlayer === null) {
@@ -21,7 +26,6 @@ export default class Worker {
   }
 
   private job: cron.CronJob | null = null;
-
   private readonly guild: discord.Guild;
 
   private readonly cronExpression: string;
@@ -35,7 +39,7 @@ export default class Worker {
     this.cronExpression = scheduleInterval.cron;
     this.audioFile = scheduleInterval.audio;
     this.excludeChannels = scheduleInterval.excludeChannels ?? [];
-    this.mute = scheduleInterval.mute;
+    this.mute = scheduleInterval.mute ?? false;
   }
 
   private instanceDebug(message: string) {

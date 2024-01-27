@@ -2,10 +2,12 @@ import discord from "discord.js";
 import { MongoClient } from "mongodb";
 import Orchestrator from "./Orchestrator";
 import Logger from "./Logger";
-import { ServerConfig, retrieveScheduleConfig } from "./ScheduleConfig";
 import AppConfig from "./AppConfig";
-import MongoConfigStorage from "./ConfigStorage/MongoConfigRepository";
+import MongoConfigStorage, {
+  MongoServerConfig,
+} from "./ConfigStorage/MongoConfigRepository";
 import express from "express";
+import { logAll, logErrors } from "./Middleware";
 
 const options: discord.ClientOptions = {
   intents: [
@@ -17,39 +19,18 @@ const options: discord.ClientOptions = {
 
 const app = express();
 app.use(express.json());
+app.use(logAll(Logger));
+
+const client = new discord.Client(options);
+const mongoClient = new MongoClient(AppConfig.mongoUri);
 
 async function main() {
-  const client = new discord.Client(options);
-
-  const mongoClient = new MongoClient(AppConfig.mongoUri);
   await mongoClient.connect();
   const db = mongoClient.db();
-  const collection = db.collection<ServerConfig>("serverConfig");
+  const collection = db.collection<MongoServerConfig>("serverConfig");
   const configStorage = await MongoConfigStorage.create(collection);
 
-  app.get("/api/v1/config/:serverId", async (req, res) => {
-    const serverId = req.params.serverId;
-    const config = await configStorage.getConfigForServer(serverId);
-    if (config === null) {
-      res.sendStatus(404);
-    } else {
-      res.json(config);
-    }
-  });
-
-  app.put("/api/v1/config/:serverId", async (req, res) => {
-    const serverId = req.params.serverId;
-    const config = req.body as ServerConfig;
-    await configStorage.updateConfigForServer(serverId, config);
-    res.sendStatus(200);
-  });
-
-  app.delete("/api/v1/config/:serverId", async (req, res) => {
-    const serverId = req.params.serverId;
-    await configStorage.deleteConfigForServer(serverId);
-    res.sendStatus(200);
-  });
-
+  app.use(logErrors(Logger));
   app.listen(AppConfig.port, () => {
     Logger.info(`Listening on port ${AppConfig.port}`);
   });
@@ -60,4 +41,3 @@ async function main() {
 }
 
 main();
-

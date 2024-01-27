@@ -4,7 +4,6 @@
     - vars/main.yml
     - vars/custom.yml
   tasks:
-
     - name: Add MongoDB Repository
       ansible.builtin.deb822_repository:
         name: mongodb-org

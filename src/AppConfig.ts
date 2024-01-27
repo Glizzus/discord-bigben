@@ -10,14 +10,16 @@ const environment =
     return defaultEnv;
   })();
 
-const port = process.env["BIGBEN_PORT"] ?? (() => {
-  if (environment !== Environment.Development) {
-    throw new Error("BIGBEN_PORT is undefined. Unable to continue");
-  }
-  const defaultPort = 3000;
-  console.log(`BIGBEN_PORT is undefined... defaulting to ${defaultPort}`);
-  return defaultPort;
-})();
+const port =
+  process.env["BIGBEN_PORT"] ??
+  (() => {
+    if (environment !== Environment.Development) {
+      throw new Error("BIGBEN_PORT is undefined. Unable to continue");
+    }
+    const defaultPort = 3000;
+    console.log(`BIGBEN_PORT is undefined... defaulting to ${defaultPort}`);
+    return defaultPort;
+  })();
 
 // We are only going to respect the .env file in development mode.
 if (environment === Environment.Development) {
@@ -28,11 +30,13 @@ if (!process.env["BIGBEN_TOKEN"]) {
   throw new Error("BIGBEN_TOKEN is undefined. Unable to continue");
 }
 
-const mongoUri = process.env["BIGBEN_MONGO_URI"] ?? (() => {
-  const defaultUri = "mongodb://localhost:27017";
-  console.log(`MONGO_URI is undefined... defaulting to ${defaultUri}`);
-  return defaultUri;
-})();
+const mongoUri =
+  process.env["BIGBEN_MONGO_URI"] ??
+  (() => {
+    const defaultUri = "mongodb://localhost:27017";
+    console.log(`MONGO_URI is undefined... defaulting to ${defaultUri}`);
+    return defaultUri;
+  })();
 
 /**
  * The configuration for the bot.
