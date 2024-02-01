@@ -1,4 +1,4 @@
-import IConfigStorage, { ConfigStorageEvent } from "../IConfigStorage";
+import IConfigStorage from "../IConfigStorage";
 import { ServerConfig } from "../ScheduleConfig";
 import mongodb from "mongodb";
 import { EventEmitter } from "events";
@@ -33,23 +33,20 @@ export default class MongoConfigStorage
     return cursor.stream();
   }
 
-  async getConfigForServer(serverId: string): Promise<ServerConfig | null> {
+  async getConfigForServer(serverId: string): Promise<MongoServerConfig | null> {
     return this.collection.findOne({ serverId }, { projection: { _id: 0 } });
   }
 
-  async updateConfigForServer(
-    serverId: string,
-    config: ServerConfig,
-  ): Promise<void> {
-    const result = await this.collection.updateOne(
+  async updateConfigForServer(serverId: string, config: ServerConfig) {
+    const result = await this.collection.findOneAndUpdate(
       { serverId },
       { $set: config },
       { upsert: true },
     );
-    if (result.modifiedCount === 0 && result.upsertedCount === 0) {
+    if (result === null) {
       throw new Error(`Unable to update config for server ${serverId}`);
     }
-    this.emit(ConfigStorageEvent.ConfigUpdated, serverId, config);
+    return result;
   }
 
   async deleteConfigForServer(serverId: string): Promise<void> {
@@ -57,21 +54,5 @@ export default class MongoConfigStorage
     if (result === null) {
       throw new Error(`Unable to delete config for server ${serverId}`);
     }
-    this.emit(ConfigStorageEvent.ConfigRemoved, serverId, result);
-  }
-
-  public on(
-    event: ConfigStorageEvent,
-    listener: (serverId: string, config: ServerConfig) => void,
-  ): this {
-    return super.on(event, listener);
-  }
-
-  public emit(
-    event: ConfigStorageEvent,
-    serverId: string,
-    config: ServerConfig,
-  ): boolean {
-    return super.emit(event, serverId, config);
   }
 }

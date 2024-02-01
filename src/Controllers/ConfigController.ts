@@ -1,12 +1,18 @@
-import IConfigStorage from "../IConfigStorage";
 import { Request, Response, NextFunction } from "express";
 import { ServerConfig, assertServerConfig } from "../ScheduleConfig";
+import ConfigService from "../Services/ConfigService";
 
-class ConfigController {
-  private readonly configStorage: IConfigStorage;
+export default class ConfigController {
 
-  constructor(configStorage: IConfigStorage) {
-    this.configStorage = configStorage;
+  private readonly service: ConfigService;
+
+  constructor(service: ConfigService) {
+    if (service === undefined || service === null) {
+      throw new Error("ConfigController: service must not be null");
+    }
+    this.service = service;
+    this.updateConfigForServer = this.updateConfigForServer.bind(this);
+    this.getConfigForServer = this.getConfigForServer.bind(this);
   }
 
   public async getConfigForServer(
@@ -16,7 +22,7 @@ class ConfigController {
   ) {
     try {
       const serverId = req.params.serverId;
-      const config = await this.configStorage.getConfigForServer(serverId);
+      const config = await this.service.getConfigForServer(serverId);
       if (config === null) {
         res.sendStatus(404);
       } else {
@@ -45,7 +51,7 @@ class ConfigController {
                 Some middleware will catch it and log it. */
         throw err;
       }
-      await this.configStorage.updateConfigForServer(serverId, config);
+      await this.service.addServer(serverId, config);
       res.sendStatus(200);
     } catch (err) {
       next(err);

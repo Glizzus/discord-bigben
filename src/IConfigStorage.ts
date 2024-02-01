@@ -1,3 +1,4 @@
+import { MongoServerConfig } from "./ConfigStorage/MongoConfigRepository";
 import { ServerConfig } from "./ScheduleConfig";
 
 export const enum ConfigStorageEvent {
@@ -5,20 +6,15 @@ export const enum ConfigStorageEvent {
   ConfigRemoved = "configRemoved",
 }
 
-export default interface IConfigStorage extends NodeJS.EventEmitter {
+export default interface IConfigStorage {
   getAllConfig(): AsyncIterable<{ serverId: string } & ServerConfig>;
-  getConfigForServer(serverId: string): Promise<ServerConfig | null>;
-  updateConfigForServer(serverId: string, config: ServerConfig): Promise<void>;
-  deleteConfigForServer(serverId: string): Promise<void>;
 
-  on(
-    event: ConfigStorageEvent,
-    listener: (serverId: string, config: ServerConfig) => void,
-  ): this;
+  getConfigForServer(serverId: string): Promise<MongoServerConfig | null>;
 
-  emit(
-    event: ConfigStorageEvent,
+  updateConfigForServer(
     serverId: string,
     config: ServerConfig,
-  ): boolean;
+  ): Promise<MongoServerConfig>;
+
+  deleteConfigForServer(serverId: string): Promise<void>;
 }

@@ -1,9 +1,4 @@
-import {
-  Request,
-  Response,
-  NextFunction,
-  ErrorRequestHandler,
-} from "express";
+import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
 import winston from "winston";
 
 /**
@@ -27,9 +22,13 @@ export function logAll(logger: winston.Logger) {
 export function logErrors(logger: winston.Logger): ErrorRequestHandler {
   return (err, _req, res, _next) => {
     logger.error(err);
-    const statusCode = err.status ?? 500;
+    const statusCode = err.status ?? 500;    
     res.status(statusCode).json({
       message: "An unexpected error occurred.",
+      error: {
+        message: err.message,
+        stack: err.stack,
+      }
     });
   };
 }

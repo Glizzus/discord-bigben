@@ -12,7 +12,6 @@ import cron from "cron";
  * One server can have multiple workers.
  */
 export default class Worker {
-
   private _cachedAudioPlayer: discordVoice.AudioPlayer | null = null;
   private get audioPlayer() {
     if (this._cachedAudioPlayer === null) {
@@ -81,7 +80,10 @@ export default class Worker {
 
     const { members } = voiceChannel;
 
-    if (this.mute) {
+    // I copy this variable in fear of it changing - it shouldn't
+    const doMute = this.mute;
+
+    if (doMute) {
       await this.muteAll(members);
     } else {
       // TODO: We shouldn't need to sleep, but it doesn't work without it.
@@ -107,8 +109,11 @@ export default class Worker {
       discordVoice.AudioPlayerStatus.Idle,
       30_000,
     );
-
-    await this.unmuteAll(members);
+    
+    if (doMute)
+    {
+      await this.unmuteAll(members);
+    }
 
     this.instanceDebug("Disconnecting from voice channel");
     connection.destroy();

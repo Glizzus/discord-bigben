@@ -1,6 +1,5 @@
 import discord from "discord.js";
 import { MongoClient } from "mongodb";
-import Orchestrator from "./Orchestrator";
 import Logger from "./Logger";
 import AppConfig from "./AppConfig";
 import MongoConfigStorage, {
@@ -8,6 +7,9 @@ import MongoConfigStorage, {
 } from "./ConfigStorage/MongoConfigRepository";
 import express from "express";
 import { logAll, logErrors } from "./Middleware";
+import ConfigService from "./Services/ConfigService";
+import ConfigController from "./Controllers/ConfigController";
+import createConfigRouter from "./Routers/ConfigRouter";
 
 const options: discord.ClientOptions = {
   intents: [
@@ -30,14 +32,23 @@ async function main() {
   const collection = db.collection<MongoServerConfig>("serverConfig");
   const configStorage = await MongoConfigStorage.create(collection);
 
+  const service = new ConfigService(configStorage, client, Logger);
+  await service.login(AppConfig.token);
+  await service.startJobsFromDatabase();
+
+  const configController = new ConfigController(service);
+  const configRouter = createConfigRouter(configController);
+
+  const masterRouter = express.Router();
+  masterRouter.use("/config", configRouter);
+
+  app.use("/api/v1", masterRouter);
+
   app.use(logErrors(Logger));
   app.listen(AppConfig.port, () => {
     Logger.info(`Listening on port ${AppConfig.port}`);
   });
 
-  const orchestrator = new Orchestrator(client, Logger, configStorage);
-  await orchestrator.login(AppConfig.token);
-  await orchestrator.run();
 }
 
 main();

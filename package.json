@@ -1,16 +1,13 @@
 {
   "engines": {
-    "node": "20.5.1"
+    "node": "20.11.0"
   },
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@discordjs/proxy": "^2.0.2",
     "@discordjs/voice": "^0.16.0",
-    "axios": "^1.6.5",
-    "commander": "^11.1.0",
     "cron": "^2.3.0",
     "debug": "^4.3.4",
     "discord.js": "^14.9.0",
@@ -24,7 +21,11 @@
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/express": "^4.17.21",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "eslint": "^8.56.0",
     "prettier": "^3.2.4",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }
