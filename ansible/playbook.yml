@@ -39,13 +39,12 @@
         update_cache: true
 
     - name: Install Node.js
-      ansible.builtin.apt:
-        name: "{{ item }}"
+      ansible.builtin.package:
+        name:
+          - nodejs
+          - git
         state: present
         update_cache: true
-      loop:
-        - nodejs
-        - git
 
     - name: Install pm2
       community.general.npm:
@@ -73,17 +72,40 @@
       args:
         chdir: "/opt/bigben"
 
+    - name: Check if Application is Started with pm2
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          pm2 list | grep -q 'bigben'
+        executable: /bin/bash
+      register: pm2_status
+      changed_when: false
+      failed_when: pm2_status.rc not in [0, 1]
+
     - name: Start Application with PM2
       ansible.builtin.command:
         cmd: "pm2 start -f /opt/bigben/dist/index.js --name 'bigben'"
       args:
         chdir: "/opt/bigben"
+      # If grep finds nothing, pm2_status.rc will be 1
+      when: pm2_status.rc == 1
       changed_when: true
       environment:
         NODE_ENV: production
         BIGBEN_PORT: "{{ bigben_port }}"
-
         BIGBEN_TOKEN: "{{ bigben_token }}"
-        BIGBEN_GUILD_ID: "{{ bigben_guild_id }}"
-        BIGBEN_AUDIO_FILE: "{{ bigben_audio_file }}"
+        BIGBEN_MONGO_URI: "{{ bigben_mongo_uri }}"
+
+    - name: Restart Application with PM2
+      ansible.builtin.command:
+        cmd: "pm2 restart bigben"
+      args:
+        chdir: "/opt/bigben"
+      # If grep finds bigben in pm2, pm2_status.rc will be 0
+      when: pm2_status.rc == 0
+      changed_when: true
+      environment:
+        NODE_ENV: production
+        BIGBEN_PORT: "{{ bigben_port }}"
+        BIGBEN_TOKEN: "{{ bigben_token }}"
         BIGBEN_MONGO_URI: "{{ bigben_mongo_uri }}"
