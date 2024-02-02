@@ -30,6 +30,10 @@ if (!process.env["BIGBEN_TOKEN"]) {
   throw new Error("BIGBEN_TOKEN is undefined. Unable to continue");
 }
 
+if (!process.env["BIGBEN_CLIENT_ID"]) {
+  throw new Error("BIGBEN_CLIENT_ID is undefined. Unable to continue");
+}
+
 const mongoUri =
   process.env["BIGBEN_MONGO_URI"] ??
   (() => {
@@ -46,6 +50,11 @@ const AppConfig = {
    * The token to use to log in to Discord.
    */
   token: process.env.BIGBEN_TOKEN,
+
+  /**
+   * The client ID of the bot.
+   */
+  clientId: process.env.BIGBEN_CLIENT_ID,
 
   /**
    * The port to listen on.

@@ -41,7 +41,7 @@ export default class MongoConfigStorage
     const result = await this.collection.findOneAndUpdate(
       { serverId },
       { $set: config },
-      { upsert: true },
+      { upsert: true, returnDocument: "after" },
     );
     if (result === null) {
       throw new Error(`Unable to update config for server ${serverId}`);

@@ -25,6 +25,7 @@ export interface ScheduleInterval {
   excludeChannels?: string[];
   audio: string;
   mute?: boolean;
+  name: string;
   description?: string;
 }
 
@@ -49,10 +50,14 @@ export function assertScheduleInterval(
     throw new Error("Expected audio property to be a string");
   }
 
-  if (!("mute" in candidate)) {
-    throw new Error("Expected mute property");
+  if (!("name" in candidate)) {
+    throw new Error("Expected name property");
   }
-  if (typeof candidate.mute !== "boolean") {
+  if (typeof candidate.name !== "string") {
+    throw new Error("Expected name property to be a string");
+  }
+
+  if ("mute" in candidate && typeof candidate.mute !== "boolean") {
     throw new Error("Expected mute property to be a boolean");
   }
 

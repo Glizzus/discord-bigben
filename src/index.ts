@@ -10,6 +10,8 @@ import { logAll, logErrors } from "./Middleware";
 import ConfigService from "./Services/ConfigService";
 import ConfigController from "./Controllers/ConfigController";
 import createConfigRouter from "./Routers/ConfigRouter";
+import ScheduleCommand from "./Commands/ScheduleCommand";
+import debugLogger from "./debugLogger";
 
 const options: discord.ClientOptions = {
   intents: [
@@ -49,6 +51,39 @@ async function main() {
     Logger.info(`Listening on port ${AppConfig.port}`);
   });
 
+  const scheduleCommand = new ScheduleCommand(service);
+  const commands = [scheduleCommand.data]
+  const rest = new discord.REST().setToken(AppConfig.token);
+
+  const dict: Record<string, ScheduleCommand> = {
+    schedule: scheduleCommand,
+  };
+
+  client.on(discord.Events.InteractionCreate, async (interaction) => {
+    Logger.info(`Received interaction ${interaction.id} with type ${interaction.type}`);
+    if (!interaction.isChatInputCommand()) {
+      return;
+    }
+    const command = dict[interaction.commandName];
+    if (command === undefined) {
+      Logger.warn(`Received interaction for unknown command ${interaction.commandName}`);
+      return;
+    }
+    try {
+      await command.execute(interaction);
+    } catch (err) {
+      Logger.error(`Error while executing command ${interaction.commandName}`);
+      Logger.error(err);
+    }
+  });
+  Logger.info(`Started refreshing ${commands.length} application (/) commands.`);
+  await rest.put(
+    discord.Routes.applicationCommands(AppConfig.clientId),
+    {
+      body: [scheduleCommand.data],
+    }
+  );
+  Logger.info("Successfully reloaded application (/) commands.");
 }
 
 main();
