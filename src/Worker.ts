@@ -84,7 +84,10 @@ export default class Worker {
     const doMute = this.mute;
 
     if (doMute) {
-      await this.muteAll(members);
+      await Promise.all([
+        this.muteAll(members),
+        new Promise((res) => setTimeout(res, 1000))
+      ]);
     } else {
       // TODO: We shouldn't need to sleep, but it doesn't work without it.
       await new Promise((res) => setTimeout(res, 1000));

@@ -6,6 +6,7 @@ export default function createConfigRouter(controller: ConfigController): Router
 
   router.get('/:serverId', controller.getConfigForServer);
   router.put('/:serverId', controller.updateConfigForServer);
+  router.delete('/:serverId', controller.deleteConfigForServer);
 
   return router;
 }

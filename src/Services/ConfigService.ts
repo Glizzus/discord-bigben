@@ -76,7 +76,12 @@ export default class ConfigService {
     const _ = await this.registerConfig(result.serverId, result);
   }
 
-  async removeServer(serverId: string) {
+  /**
+   * Remove's all of the server's configuration from the database and stops all
+   * workers associated with the server.
+   * @param serverId the id of the server's configuration to remove
+   */
+  async deleteConfigForServer(serverId: string) {
     await this.repo.deleteConfigForServer(serverId);
     const workers = this.workerMap.get(serverId);
     if (workers !== undefined) {

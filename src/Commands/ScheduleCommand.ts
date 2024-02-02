@@ -3,48 +3,6 @@ import ConfigService from "../Services/ConfigService";
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import debugLogger from "../debugLogger";
 
-const schedule = new SlashCommandBuilder()
-  .setName('schedule')
-  .setDescription('View and manipulate the schedule')
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName('list')
-      .setDescription('List all scheduled intervals')
-  )
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName('add')
-      .setDescription('Add a new scheduled interval')
-      .addStringOption(option =>
-        option
-          .setName('cron')
-          .setDescription('Cron string for the interval')
-          .setRequired(true)
-      )
-      .addStringOption(option =>
-        option
-          .setName('name')
-          .setDescription('Name of the interval')
-          .setRequired(true)
-      )
-      .addStringOption(option =>
-        option
-          .setName('audio')
-          .setDescription('Audio to play')
-          .setRequired(true)
-      )
-      .addBooleanOption(option =>
-        option
-          .setName('mute')
-          .setDescription('Mute the audio')
-      )
-      .addStringOption(option =>
-        option
-          .setName('description')
-          .setDescription('Description of the interval')
-      )
-  ).toJSON();
-
 export default class ScheduleCommand implements Command {
 
   private readonly listSubcommandName = 'list';
@@ -91,7 +49,6 @@ export default class ScheduleCommand implements Command {
             .setDescription('Description of the interval')
         )
     ).toJSON();
-
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -140,9 +97,7 @@ export default class ScheduleCommand implements Command {
         }
         await interaction.reply("Added interval");
       }
-
     }
   }
-
 }
   

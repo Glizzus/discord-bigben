@@ -94,11 +94,12 @@
         NODE_ENV: production
         BIGBEN_PORT: "{{ bigben_port }}"
         BIGBEN_TOKEN: "{{ bigben_token }}"
+        BIGBEN_CLIENT_ID: "{{ bigben_client_id }}"
         BIGBEN_MONGO_URI: "{{ bigben_mongo_uri }}"
 
     - name: Restart Application with PM2
       ansible.builtin.command:
-        cmd: "pm2 restart bigben"
+        cmd: "pm2 restart bigben --update-env"
       args:
         chdir: "/opt/bigben"
       # If grep finds bigben in pm2, pm2_status.rc will be 0
@@ -108,4 +109,5 @@
         NODE_ENV: production
         BIGBEN_PORT: "{{ bigben_port }}"
         BIGBEN_TOKEN: "{{ bigben_token }}"
+        BIGBEN_CLIENT_ID: "{{ bigben_client_id }}"
         BIGBEN_MONGO_URI: "{{ bigben_mongo_uri }}"

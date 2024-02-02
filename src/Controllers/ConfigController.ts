@@ -57,4 +57,18 @@ export default class ConfigController {
       next(err);
     }
   }
+
+  public async deleteConfigForServer(
+    req: Request<{ serverId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const serverId = req.params.serverId;
+      await this.service.deleteConfigForServer(serverId);
+      res.sendStatus(200);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
