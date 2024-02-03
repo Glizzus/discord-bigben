@@ -1,37 +1,24 @@
-export interface ServerConfig {
-  schedule: ScheduleInterval[];
-}
-
-export function assertServerConfig(
-  candidate: unknown,
-): asserts candidate is ServerConfig {
-  if (typeof candidate !== "object" || candidate === null) {
-    throw new Error("Expected an object");
-  }
-
-  if (!("schedule" in candidate)) {
-    throw new Error("Expected schedule property");
-  }
-  if (!Array.isArray(candidate.schedule)) {
-    throw new Error("Expected schedule property to be an array");
-  }
-  for (const interval of candidate.schedule) {
-    assertScheduleInterval(interval);
-  }
-}
-
-export interface ScheduleInterval {
+/**
+ * A SoundCronConfig is a single sound that is scheduled to play at a certain time.
+ * It has configuration about the sound, the time it should play, metadata, and more.
+ */
+export interface SoundCronConfig {
   cron: string;
-  excludeChannels?: string[];
-  audio: string;
-  mute?: boolean;
   name: string;
+  audio: string;
+
+  excludeChannels?: string[];
+  mute?: boolean;
   description?: string;
 }
 
-export function assertScheduleInterval(
+/**
+ * Throws an error if the supplied parameter is not a SoundCronConfig.
+ * @param candidate the object that might be a SoundCronConfig
+ */
+export function assertSoundCronConfig(
   candidate: unknown,
-): asserts candidate is ScheduleInterval {
+): asserts candidate is SoundCronConfig {
   if (typeof candidate !== "object" || candidate === null) {
     throw new Error("Expected an object");
   }
@@ -76,5 +63,16 @@ export function assertScheduleInterval(
         );
       }
     }
+  }
+}
+
+export function assertSoundCronConfigs(
+  candidate: unknown,
+): asserts candidate is SoundCronConfig[] {
+  if (!Array.isArray(candidate)) {
+    throw new Error("Expected an array");
+  }
+  for (const interval of candidate) {
+    assertSoundCronConfig(interval);
   }
 }

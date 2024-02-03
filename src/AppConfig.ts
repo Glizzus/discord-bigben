@@ -34,11 +34,14 @@ if (!process.env["BIGBEN_CLIENT_ID"]) {
   throw new Error("BIGBEN_CLIENT_ID is undefined. Unable to continue");
 }
 
-const mongoUri =
-  process.env["BIGBEN_MONGO_URI"] ??
+const mariaDbUri =
+  process.env["BIGBEN_MARIADB_URI"] ??
   (() => {
-    const defaultUri = "mongodb://localhost:27017";
-    console.log(`MONGO_URI is undefined... defaulting to ${defaultUri}`);
+    if (environment !== Environment.Development) {
+      throw new Error("BIGBEN_MARIADB_URI is undefined. Unable to continue");
+    }
+    const defaultUri = "mariadb://mariadb:3306/bigben-dev"
+    console.log(`BIGBEN_MARIADB_URI is undefined... defaulting to ${defaultUri}`);
     return defaultUri;
   })();
 
@@ -64,7 +67,7 @@ const AppConfig = {
   /**
    * The URI to use to connect to MongoDB.
    */
-  mongoUri,
+  mariaDbUri,
 
   /**
    * The environment we are running in.

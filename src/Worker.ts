@@ -4,7 +4,7 @@ import { Readable } from "stream";
 
 import debugLogger from "./debugLogger";
 import AudioResourceType, { determineType } from "./AudioResourceType";
-import { ScheduleInterval } from "./ScheduleConfig";
+import { SoundCronConfig } from "./ScheduleConfig";
 import cron from "cron";
 
 /**
@@ -32,7 +32,7 @@ export default class Worker {
   private readonly excludeChannels: string[];
   private readonly mute: boolean;
 
-  constructor(guild: discord.Guild, scheduleInterval: ScheduleInterval) {
+  constructor(guild: discord.Guild, scheduleInterval: SoundCronConfig) {
     this.guild = guild;
 
     this.cronExpression = scheduleInterval.cron;

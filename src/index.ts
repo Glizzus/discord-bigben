@@ -1,17 +1,14 @@
 import discord from "discord.js";
-import { MongoClient } from "mongodb";
+import mariadb from "mariadb";
 import Logger from "./Logger";
 import AppConfig from "./AppConfig";
-import MongoConfigStorage, {
-  MongoServerConfig,
-} from "./ConfigStorage/MongoConfigRepository";
 import express from "express";
 import { logAll, logErrors } from "./Middleware";
-import ConfigService from "./Services/ConfigService";
-import ConfigController from "./Controllers/ConfigController";
-import createConfigRouter from "./Routers/ConfigRouter";
+import SoundCronService from "./Services/SoundCronService";
+import SoundCronController from "./Controllers/SoundCronController";
+import createScheduleRouter from "./Routers/SoundCronRouter";
 import ScheduleCommand from "./Commands/ScheduleCommand";
-import debugLogger from "./debugLogger";
+import { MariaDbSoundCronRepository } from "./Repositories/MariaDbSoundCronRepository";
 
 const options: discord.ClientOptions = {
   intents: [
@@ -26,20 +23,19 @@ app.use(express.json());
 app.use(logAll(Logger));
 
 const client = new discord.Client(options);
-const mongoClient = new MongoClient(AppConfig.mongoUri);
+
+const pool = mariadb.createPool(AppConfig.mariaDbUri);
 
 async function main() {
-  await mongoClient.connect();
-  const db = mongoClient.db();
-  const collection = db.collection<MongoServerConfig>("serverConfig");
-  const configStorage = await MongoConfigStorage.create(collection);
 
-  const service = new ConfigService(configStorage, client, Logger);
+  const configStorage = new MariaDbSoundCronRepository(pool);
+
+  const service = new SoundCronService(configStorage, client, Logger);
   await service.login(AppConfig.token);
   await service.startJobsFromDatabase();
 
-  const configController = new ConfigController(service);
-  const configRouter = createConfigRouter(configController);
+  const configController = new SoundCronController(service);
+  const configRouter = createScheduleRouter(configController);
 
   const masterRouter = express.Router();
   masterRouter.use("/config", configRouter);

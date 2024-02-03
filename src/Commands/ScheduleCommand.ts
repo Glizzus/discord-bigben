@@ -1,5 +1,5 @@
 import Command from "./Command";
-import ConfigService from "../Services/ConfigService";
+import SoundCronService from "../Services/SoundCronService";
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import debugLogger from "../debugLogger";
 
@@ -48,9 +48,20 @@ export default class ScheduleCommand implements Command {
             .setName('description')
             .setDescription('Description of the interval')
         )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('delete')
+        .setDescription('Delete a scheduled interval')
+        .addStringOption(option =>
+          option
+            .setName('name')
+            .setDescription('Name of the interval')
+            .setRequired(true)
+        )
     ).toJSON();
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: SoundCronService) {}
 
   async execute(interaction: ChatInputCommandInteraction) {
     if (interaction.guildId === null) {
@@ -59,20 +70,27 @@ export default class ScheduleCommand implements Command {
     const subcommand = interaction.options.getSubcommand();
     switch (subcommand) {
       case 'list': {
-        const configs = await this.configService.getConfigForServer(interaction.guildId);
+        debugLogger(`Listing intervals for ${interaction.guildId}`)
+        const configs = this.configService.getSoundCronsForServer(interaction.guildId);
         if (configs === null) {
+          debugLogger("Configs is null")
           await interaction.reply("No scheduled intervals");
           return;
         }
-        const intervals = configs.schedule;
-        if (intervals.length === 0) {
+        const response = [];
+        let i = 0;
+        for await (const config of configs) {
+          const { name, description, cron, audio, mute } = config;
+          response.push(`**${i + 1}.** ${name} - ${description ?? "No description"} - ${cron} - ${audio} - ${mute ? "Muted" : "Not muted"}`);
+          i += 1;
+        }
+        if (response.length === 0) {
+          debugLogger("Scheduled intervals is empty")
           await interaction.reply("No scheduled intervals");
           return;
         }
-        const response = intervals.map((interval, i) => {
-          return `${i + 1}. ${interval.cron} - ${interval.audio}`;
-        }).join('\n');
-        await interaction.reply(response);
+        await interaction.reply(response.join("\n"));
+        return;
       }
       case 'add': {
         debugLogger("Adding interval");
@@ -89,13 +107,25 @@ export default class ScheduleCommand implements Command {
           description,
         };
         try {
-          await this.configService.addServer(interaction.guildId, { schedule: [interval]});
+          await this.configService.addSoundCrons(interaction.guildId, [interval]);
         } catch (err) {
           debugLogger("Failed to add interval", err);
           await interaction.reply("Failed to add interval");
           return;
         }
         await interaction.reply("Added interval");
+        break;
+      }
+      case 'delete': {
+        debugLogger("Deleting interval");
+        const name = interaction.options.getString('name', true);
+        try {
+          await this.configService.deleteSoundCronByName(interaction.guildId, name);
+        } catch (err) {
+          debugLogger("Failed to delete interval", err);
+          await interaction.reply("Failed to delete interval");
+          return;
+        }
       }
     }
   }

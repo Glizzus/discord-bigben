@@ -8,16 +8,23 @@ services:
     environment:
       - BIGBEN_TOKEN=${BIGBEN_TOKEN}
       - BIGBEN_CLIENT_ID=${BIGBEN_CLIENT_ID}
+      
+      - BIGBEN_MARIADB_URI=${BIGBEN_MARIADB_URI}
 
-      - BIGBEN_MONGO_URI=${BIGBEN_MONGO_URI:-mongodb://host.docker.internal:27017/bigben}
       - DEBUG=${DEBUG}
 
-  mongo:
-    image: mongo:6.0.13
+  mariadb:
+    image: mariadb:10.3
     ports:
-      - 27017:27017
+      - 3306:3306
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+      - MARIADB_USER=${MARIADB_USER}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
     volumes:
-      - bigben-mongo:/data/db
+      - bigben-mariadb:/var/lib/mysql
+      - ./database/schedule-table.sql:/docker-entrypoint-initdb.d/schedule-table.sql
 
 volumes:
-  bigben-mongo:
+  bigben-mariadb:
