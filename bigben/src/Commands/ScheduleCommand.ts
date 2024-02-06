@@ -2,6 +2,7 @@ import { Command } from "./Command";
 import { SoundCronService } from "../Services/SoundCronService";
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import { debugLogger } from "../debugLogger";
+import { Logger } from "../Logger";
 
 export class ScheduleCommand implements Command {
 
@@ -85,7 +86,6 @@ export class ScheduleCommand implements Command {
           i += 1;
         }
         if (response.length === 0) {
-          debugLogger("Scheduled intervals is empty")
           await interaction.reply("No scheduled intervals");
           return;
         }
@@ -109,7 +109,7 @@ export class ScheduleCommand implements Command {
         try {
           await this.configService.addSoundCrons(interaction.guildId, [interval]);
         } catch (err) {
-          debugLogger("Failed to add interval", err);
+          Logger.error("Failed to add interval", err);
           await interaction.reply("Failed to add interval");
           return;
         }
@@ -122,7 +122,7 @@ export class ScheduleCommand implements Command {
         try {
           await this.configService.deleteSoundCronByName(interaction.guildId, name);
         } catch (err) {
-          debugLogger("Failed to delete interval", err);
+          Logger.error("Failed to delete interval", err);
           await interaction.reply("Failed to delete interval");
           return;
         }
