@@ -1,9 +1,9 @@
-import Command from "./Command";
-import SoundCronService from "../Services/SoundCronService";
+import { Command } from "./Command";
+import { SoundCronService } from "../Services/SoundCronService";
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
-import debugLogger from "../debugLogger";
+import { debugLogger } from "../debugLogger";
 
-export default class ScheduleCommand implements Command {
+export class ScheduleCommand implements Command {
 
   private readonly listSubcommandName = 'list';
   private readonly addSubcommandName = 'add';

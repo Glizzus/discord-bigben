@@ -4,19 +4,22 @@ services:
   bigben:
     ports:
       - 3000:3000
-    build: .
+    build:
+      context: ./bigben
+      dockerfile: Dockerfile  
     environment:
       - BIGBEN_TOKEN=${BIGBEN_TOKEN}
       - BIGBEN_CLIENT_ID=${BIGBEN_CLIENT_ID}
-      
       - BIGBEN_MARIADB_URI=${BIGBEN_MARIADB_URI}
 
       - DEBUG=${DEBUG}
 
   mariadb:
-    image: mariadb:10.3
     ports:
       - 3306:3306
+    build:
+      context: ./mariadb
+      dockerfile: Dockerfile
     environment:
       - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       - MARIADB_DATABASE=${MARIADB_DATABASE}
@@ -24,7 +27,7 @@ services:
       - MARIADB_PASSWORD=${MARIADB_PASSWORD}
     volumes:
       - bigben-mariadb:/var/lib/mysql
-      - ./database/schedule-table.sql:/docker-entrypoint-initdb.d/schedule-table.sql
+      
 
 volumes:
   bigben-mariadb:

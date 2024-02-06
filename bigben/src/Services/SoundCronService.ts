@@ -1,11 +1,11 @@
-import winston, { debug } from "winston";
+import winston from "winston";
 import * as discord from "discord.js";
-import debugLogger from "../debugLogger";
-import Worker from "../Worker";
+import { debugLogger } from "../debugLogger";
+import { Worker } from "../Worker";
 import { SoundCronConfig } from "../ScheduleConfig";
 import { ISoundCronRepository } from "../Repositories/ISoundCronRepository";
 
-export default class SoundCronService {
+export class SoundCronService {
   private readonly repo: ISoundCronRepository;
   private readonly discordClient: discord.Client;
   private readonly logger: winston.Logger;

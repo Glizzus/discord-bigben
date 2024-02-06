@@ -1,4 +1,4 @@
 node_version: "20"
 
-bigben_mongo_uri: "mongodb://localhost:27017/bigben"
-bigben_port: 80
+bigben_port: 3000
+bigben_mariadb_uri: "mariadb://{{ mariadb_user }}:{{ mariadb_password }}@localhost/{{ mariadb_database }}"

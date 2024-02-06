@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, RESTPostAPIApplicationCommandsJSONBody } from 'discord.js';
 
-export default interface Command {
+export interface Command {
     data: RESTPostAPIApplicationCommandsJSONBody
 
     execute: (interaction: ChatInputCommandInteraction) => Promise<void>;

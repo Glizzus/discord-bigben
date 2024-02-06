@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import Environment from "./Environment";
-import Logger from "./Logger";
+import { Logger } from "./Logger";
 
 const environment =
   process.env["NODE_ENV"]?.toLowerCase() ??
@@ -16,7 +16,7 @@ const port =
     if (environment !== Environment.Development) {
       throw new Error("BIGBEN_PORT is undefined. Unable to continue");
     }
-    const defaultPort = 3000;
+    const defaultPort = "3000";
     console.log(`BIGBEN_PORT is undefined... defaulting to ${defaultPort}`);
     return defaultPort;
   })();
@@ -48,7 +48,7 @@ const mariaDbUri =
 /**
  * The configuration for the bot.
  */
-const AppConfig = {
+export const AppConfig = {
   /**
    * The token to use to log in to Discord.
    */
@@ -78,5 +78,3 @@ const AppConfig = {
 
 Logger.info("Loaded config");
 Logger.info(`Environment: ${AppConfig.environment}`);
-
-export default AppConfig;

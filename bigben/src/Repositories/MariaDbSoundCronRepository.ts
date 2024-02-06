@@ -1,7 +1,7 @@
 import { SoundCronConfig } from '../ScheduleConfig';
 import * as mariadb from 'mariadb';
 import { ISoundCronRepository } from './ISoundCronRepository';
-import debugLogger from '../debugLogger';
+import { debugLogger } from '../debugLogger';
 
 export class MariaDbSoundCronRepository implements ISoundCronRepository {
 

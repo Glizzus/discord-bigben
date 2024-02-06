@@ -1,11 +1,11 @@
 /**
  * The type of audio resource to play.
  */
-enum AudioResourceType {
+export enum AudioResourceType {
   File,
   Stream,
 }
-export default AudioResourceType;
+AudioResourceType;
 
 /**
  * Indicates the type of audio resource. This does not check if the resource exists.

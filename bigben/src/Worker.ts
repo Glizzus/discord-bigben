@@ -1,17 +1,17 @@
 import discord from "discord.js";
 import * as discordVoice from "@discordjs/voice";
+import cron from "cron";
 import { Readable } from "stream";
 
-import debugLogger from "./debugLogger";
-import AudioResourceType, { determineType } from "./AudioResourceType";
+import { debugLogger } from "./debugLogger";
+import { AudioResourceType, determineType } from "./AudioResourceType";
 import { SoundCronConfig } from "./ScheduleConfig";
-import cron from "cron";
 
 /**
  * A worker runs one cron job.
  * One server can have multiple workers.
  */
-export default class Worker {
+export class Worker {
   private _cachedAudioPlayer: discordVoice.AudioPlayer | null = null;
   private get audioPlayer() {
     if (this._cachedAudioPlayer === null) {

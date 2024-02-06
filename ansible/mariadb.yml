@@ -1,0 +1,126 @@
+- name: Setup MariaDB
+  hosts: mariadb
+  become: true
+  vars:
+    mariadb_database: bigben
+    app_migration_files: "{{ playbook_dir }}/../mariadb/app"
+    system_migration_files: "{{ playbook_dir }}/../mariadb/system"
+  vars_files:
+    - vars/custom.yml
+
+  tasks:
+    - name: Install MariaDB and Python
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - mariadb-server
+        - python3
+        - python3-pip
+
+    - name: Start MariaDB
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: true
+
+    - name: Install mysqlclient
+      ansible.builtin.pip:
+        name: pymysql
+        state: present
+
+    - name: Set root password
+      community.mysql.mysql_user:
+        name: root
+        login_user: root
+        login_password: "{{ mariadb_old_root_password }}"
+        check_implicit_admin: true
+        password: "{{ mariadb_root_password }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Create opt/mysql/migration_files
+      ansible.builtin.file:
+        path: /opt/mysql/system/migration_files
+        state: directory
+        mode: "0700"
+
+    - name: Copy system SQL files
+      ansible.posix.synchronize:
+        src: "{{ system_migration_files }}"
+        dest: /opt/mysql/system/migration_files
+        recursive: true
+        delete: true
+
+    - name: Find system SQL files
+      ansible.builtin.find:
+        paths: /opt/mysql/system/migration_files
+        patterns: "*.sql"
+        recurse: true
+      register: system_sql_files
+
+    - name: Sort system SQL files
+      ansible.builtin.set_fact:
+        sorted_system_sql_files: "{{ system_sql_files.files | sort(attribute='path') }}"
+
+    - name: Secure MariaDB
+      community.mysql.mysql_db:
+        name: all
+        check_implicit_admin: true
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        state: import
+        target: "{{ item.path }}"
+      with_items: "{{ sorted_system_sql_files }}"
+      register: secure_mariadb_output
+
+    - name: Print secure MariaDB output
+      ansible.builtin.debug:
+        var: secure_mariadb_output
+
+    - name: Create database
+      community.mysql.mysql_db:
+        name: "{{ mariadb_database }}"
+        login_password: "{{ mariadb_root_password }}"
+        state: present
+
+    - name: Create user
+      community.mysql.mysql_user:
+        name: "{{ mariadb_user }}"
+        password: "{{ mariadb_password }}"
+        login_password: "{{ mariadb_root_password }}"
+        priv: "{{ mariadb_database }}.*:ALL"
+        state: present
+
+    - name: Create app migration files directory
+      ansible.builtin.file:
+        path: /opt/mysql/bigben/migration_files
+        state: directory
+        mode: "0700"
+
+    - name: Synchronize SQL files
+      ansible.posix.synchronize:
+        src: "{{ app_migration_files }}"
+        dest: /opt/mysql/bigben/migration_files
+        delete: true
+        recursive: true
+
+    - name: Find SQL files
+      ansible.builtin.find:
+        paths: /opt/mysql/bigben/migration_files
+        recurse: true
+        patterns: "*.sql"
+      register: sql_files
+
+    - name: Sort SQL files
+      ansible.builtin.set_fact:
+        sorted_sql_files: "{{ sql_files.files | sort(attribute='path') }}"
+
+    - name: Run SQL files
+      community.mysql.mysql_db:
+        name: "{{ mariadb_database }}"
+        login_user: "{{ mariadb_user }}"
+        login_password: "{{ mariadb_password }}"
+        state: import
+        target: "{{ item.path }}"
+      with_items: "{{ sorted_sql_files }}"

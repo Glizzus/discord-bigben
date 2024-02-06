@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { SoundCronConfig, assertSoundCronConfigs } from "../ScheduleConfig";
-import SoundCronService from "../Services/SoundCronService";
+import { SoundCronService } from "../Services/SoundCronService";
 
-export default class SoundCronController {
+export class SoundCronController {
 
   private readonly service: SoundCronService;
 
