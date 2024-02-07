@@ -77,7 +77,7 @@
 
         - name: Install Bigben dependencies
           community.general.npm:
-            path: "/opt/bigben"
+            path: "/opt/bigben/bigben"
             state: present
             ci: true
 
@@ -86,7 +86,7 @@
             cmd: "npm run build"
           changed_when: false
           args:
-            chdir: "/opt/bigben"
+            chdir: "/opt/bigben/bigben"
 
         - name: Check if Application is Started with pm2
           ansible.builtin.shell:
@@ -100,9 +100,9 @@
 
         - name: Start Application with PM2
           ansible.builtin.command:
-            cmd: "pm2 start -f /opt/bigben/dist/index.js --name 'bigben'"
+            cmd: "pm2 start -f dist/index.js --name 'bigben'"
           args:
-            chdir: "/opt/bigben"
+            chdir: "/opt/bigben/bigben"
           # If grep finds nothing, pm2_status.rc will be 1
           when: pm2_status.rc == 1
           changed_when: true
@@ -117,7 +117,7 @@
           ansible.builtin.command:
             cmd: "pm2 restart bigben --update-env"
           args:
-            chdir: "/opt/bigben"
+            chdir: "/opt/bigben/bigben"
           # If grep finds bigben in pm2, pm2_status.rc will be 0
           when: pm2_status.rc == 0
           changed_when: true

@@ -110,6 +110,10 @@ export class ScheduleCommand implements Command {
             maxPropertyLength.audio + 2,
             6,
           ],
+          style: {
+            head: [],
+            border: [],
+          }
         });
         table.push(...responses);
         await interaction.reply("```" + table.toString() + "```");

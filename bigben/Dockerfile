@@ -10,7 +10,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM node:20
+FROM node:20-bullseye-slim
 
 WORKDIR /usr/src/app
 
