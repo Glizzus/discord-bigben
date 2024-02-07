@@ -1,2 +1,3 @@
 ALTER TABLE soundCrons
-ADD UNIQUE (name);
+ADD CONSTRAINT soundCronNameServerIdUnique UNIQUE (name, serverId);
+
