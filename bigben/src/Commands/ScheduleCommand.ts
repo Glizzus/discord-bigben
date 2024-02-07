@@ -1,6 +1,6 @@
 import { Command } from "./Command";
 import { SoundCronService } from "../Services/SoundCronService";
-import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import { AutocompleteInteraction, CacheType, ChatInputCommandInteraction, CommandInteraction, SlashCommandBuilder } from "discord.js";
 import { debugLogger } from "../debugLogger";
 import { Logger } from "../Logger";
 import Table from 'cli-table3';
@@ -8,20 +8,17 @@ import { AddFailureReason, AddSoundCronError } from "../Repositories/ISoundCronR
 
 export class ScheduleCommand implements Command {
 
-  private readonly listSubcommandName = 'list';
-  private readonly addSubcommandName = 'add';
-
   data = new SlashCommandBuilder()
     .setName('schedule')
     .setDescription('View and manipulate the schedule')
     .addSubcommand(subcommand =>
       subcommand
-        .setName(this.listSubcommandName)
+        .setName('list')
         .setDescription('List all scheduled intervals')
     )
     .addSubcommand(subcommand =>
       subcommand
-        .setName(this.addSubcommandName)
+        .setName('add')
         .setDescription('Add a new scheduled interval')
         .addStringOption(option =>
           option
@@ -61,6 +58,7 @@ export class ScheduleCommand implements Command {
             .setName('name')
             .setDescription('Name of the interval')
             .setRequired(true)
+            .setAutocomplete(true)
         )
     ).toJSON();
 
@@ -158,6 +156,29 @@ export class ScheduleCommand implements Command {
           Logger.error("Failed to delete interval", err);
           await interaction.reply("Failed to delete interval");
           return;
+        }
+      }
+    }
+  }
+
+  async autocomplete(interaction: AutocompleteInteraction) {
+    if (interaction.guildId === null) {
+      Logger.warn("interaction.guildId is somehow null when running autocomplete");
+      return;
+    }
+    const subcommand = interaction.options.getSubcommand();
+    switch (subcommand) {
+      case 'delete': {
+        const focusedOption = interaction.options.getFocused(true);
+        if (focusedOption.name === 'name') {
+          const soundCrons = this.configService.getSoundCronsForServer(interaction.guildId);
+          const names = [];
+          for await (const config of soundCrons) {
+            names.push(config.name);
+          }
+          const candidates = names.filter(name => name.startsWith(focusedOption.value));
+          const responses = candidates.map(name => ({ name, value: name }));
+          await interaction.respond(responses);
         }
       }
     }

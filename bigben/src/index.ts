@@ -65,20 +65,33 @@ async function main() {
 
     discordClient.on(discord.Events.InteractionCreate, async (interaction) => {
       Logger.info(`Received interaction ${interaction.id} with type ${interaction.type}`);
-      if (!interaction.isChatInputCommand()) {
-        return;
+      if (interaction.isChatInputCommand()) {
+        const command = dict[interaction.commandName];
+        if (command === undefined) {
+          Logger.warn(`Received interaction for unknown command ${interaction.commandName}`);
+          return;
+        }
+        try {
+          await command.execute(interaction);
+        } catch (err) {
+          Logger.error(`Error while executing command ${interaction.commandName}`);
+          Logger.error(err);
+        }
       }
-      const command = dict[interaction.commandName];
-      if (command === undefined) {
-        Logger.warn(`Received interaction for unknown command ${interaction.commandName}`);
-        return;
+      else if (interaction.isAutocomplete()) {
+        const command = dict[interaction.commandName];
+        if (command === undefined) {
+          Logger.warn(`Received interaction for unknown command ${interaction.commandName}`);
+          return;
+        }
+        try {
+          await command.autocomplete(interaction);
+        } catch (err) {
+          Logger.error(`Error while autocompleting command ${interaction.commandName}`);
+          Logger.error(err);
+        }
       }
-      try {
-        await command.execute(interaction);
-      } catch (err) {
-        Logger.error(`Error while executing command ${interaction.commandName}`);
-        Logger.error(err);
-      }
+    
     });
     Logger.info(`Started refreshing ${commands.length} application (/) commands.`);
     await rest.put(

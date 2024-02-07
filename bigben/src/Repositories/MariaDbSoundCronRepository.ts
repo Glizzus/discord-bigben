@@ -53,7 +53,7 @@ export class MariaDbSoundCronRepository implements ISoundCronRepository {
       throw err;
     } finally {
       if (conn) {
-        await conn.end();
+        await conn.release();
       }
     }
   }
@@ -67,7 +67,7 @@ export class MariaDbSoundCronRepository implements ISoundCronRepository {
       );
       return affectedRows;
     } finally {
-      await conn.end();
+      await conn.release();
     }
   }
 
@@ -83,7 +83,7 @@ export class MariaDbSoundCronRepository implements ISoundCronRepository {
         yield row as SoundCronConfig;
       }
     } finally {
-      await conn.end();
+      await conn.release();
     }
   }
 
@@ -99,7 +99,7 @@ export class MariaDbSoundCronRepository implements ISoundCronRepository {
         yield [serverId, soundCron]
       }
     } finally {
-      await conn.end();
+      await conn.release();
     }
   }
 }

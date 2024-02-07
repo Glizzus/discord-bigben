@@ -107,10 +107,11 @@ export class Worker {
       20_000,
     );
     this.instanceDebug("Waiting for audio player to stop playing");
+    const hour = 60 * 60 * 1000;
     await discordVoice.entersState(
       this.audioPlayer,
       discordVoice.AudioPlayerStatus.Idle,
-      30_000,
+      hour,
     );
     
     if (doMute)

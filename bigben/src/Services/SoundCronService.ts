@@ -3,7 +3,7 @@ import * as discord from "discord.js";
 import { debugLogger } from "../debugLogger";
 import { Worker } from "../Worker";
 import { SoundCronConfig } from "../ScheduleConfig";
-import { AddFailureReason, AddSoundCronError, ISoundCronRepository } from "../Repositories/ISoundCronRepository";
+import { ISoundCronRepository } from "../Repositories/ISoundCronRepository";
 
 export class SoundCronService {
   private readonly repo: ISoundCronRepository;
@@ -11,6 +11,14 @@ export class SoundCronService {
   private readonly logger: winston.Logger;
 
   private readonly workerMap = new Map<string, Map<string, Worker>>();
+
+  public activeSoundCronNames(serverId: string) {
+    const serverMap = this.workerMap.get(serverId);
+    if (serverMap === undefined) {
+      return []
+    }
+    return [...serverMap.keys()]
+  }
 
   constructor(
     repo: ISoundCronRepository,
