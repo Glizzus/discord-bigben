@@ -3,7 +3,7 @@ import * as discord from "discord.js";
 import { debugLogger } from "../debugLogger";
 import { Worker } from "../Worker";
 import { SoundCronConfig } from "../ScheduleConfig";
-import { ISoundCronRepository } from "../Repositories/ISoundCronRepository";
+import { AddFailureReason, AddSoundCronError, ISoundCronRepository } from "../Repositories/ISoundCronRepository";
 
 export class SoundCronService {
   private readonly repo: ISoundCronRepository;
@@ -45,7 +45,7 @@ export class SoundCronService {
   }
 
   private registerConfig(serverId: string, config: SoundCronConfig) {
-    const guild = this.discordClient.guilds.cache.get(serverId);
+    const guild = this.discordClient.guilds.cache.get(String(serverId));
     if (guild === undefined) {
       this.logger.warn(`Unable to find guild ${serverId}`);
       return false;

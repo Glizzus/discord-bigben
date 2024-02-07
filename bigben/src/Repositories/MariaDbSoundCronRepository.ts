@@ -1,7 +1,8 @@
 import { SoundCronConfig } from '../ScheduleConfig';
 import * as mariadb from 'mariadb';
-import { ISoundCronRepository } from './ISoundCronRepository';
+import { AddFailureReason, AddSoundCronError, ISoundCronRepository } from './ISoundCronRepository';
 import { debugLogger } from '../debugLogger';
+import { Logger } from '../Logger';
 
 export class MariaDbSoundCronRepository implements ISoundCronRepository {
 
@@ -19,20 +20,29 @@ export class MariaDbSoundCronRepository implements ISoundCronRepository {
         [serverId]
       );
 
+      // 2. Insert the soundCrons and their excluded channels
       for (const cronConfig of soundCrons) {
         const { name, cron, audio, mute, description } = cronConfig;
-        const insertResult = await conn.query(
-          `INSERT INTO soundCrons (serverId, name, cron, audio, mute, description) VALUES (?, ?, ?, ?, ?, ?)`,
-          [serverId, name, cron, audio, mute ?? false, description]
-        );
-        const soundCronId = insertResult.insertId;
-        if (cronConfig.excludeChannels) {
-          for (const channeledId of cronConfig.excludeChannels) {
-            await conn.query(
-              `INSERT INTO excludedChannels (soundCronId, channelId) VALUES (?, ?)`,
-              [soundCronId, channeledId]
-            );
+        try {
+          const insertResult = await conn.query(
+            `INSERT INTO soundCrons (serverId, name, cron, audio, mute, description) VALUES (?, ?, ?, ?, ?, ?)`,
+            [serverId, name, cron, audio, mute ?? false, description]
+          );
+          const soundCronId = insertResult.insertId;
+          if (cronConfig.excludeChannels) {
+            for (const channeledId of cronConfig.excludeChannels) {
+              await conn.query(
+                `INSERT INTO excludedChannels (soundCronId, channelId) VALUES (?, ?)`,
+                [soundCronId, channeledId]
+              );
+            }
           }
+        } catch (err) {
+          if (err instanceof mariadb.SqlError && err.code === 'ER_DUP_ENTRY') {
+            throw new AddSoundCronError(`SoundCron with name ${name} already exists`, AddFailureReason.AlreadyExists);
+          }
+          Logger.error("Failed to add soundCron for unknown reason:", err);
+          throw new AddSoundCronError(`Error adding soundCron with name ${name}`, AddFailureReason.Unknown);
         }
       }
       await conn.commit();

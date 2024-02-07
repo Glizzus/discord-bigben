@@ -3,6 +3,8 @@ import { SoundCronService } from "../Services/SoundCronService";
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import { debugLogger } from "../debugLogger";
 import { Logger } from "../Logger";
+import Table from 'cli-table3';
+import { AddFailureReason, AddSoundCronError } from "../Repositories/ISoundCronRepository";
 
 export class ScheduleCommand implements Command {
 
@@ -78,18 +80,39 @@ export class ScheduleCommand implements Command {
           await interaction.reply("No scheduled intervals");
           return;
         }
-        const response = [];
-        let i = 0;
+
+        const maxPropertyLength = {
+          name: "Name".length,
+          description: "Description".length,
+          cron: "Cron".length,
+          audio: "Audio".length,
+        };
+
+        const responses = [];
         for await (const config of configs) {
           const { name, description, cron, audio, mute } = config;
-          response.push(`**${i + 1}.** ${name} - ${description ?? "No description"} - ${cron} - ${audio} - ${mute ? "Muted" : "Not muted"}`);
-          i += 1;
+          maxPropertyLength.name = Math.max(maxPropertyLength.name, name.length);
+          maxPropertyLength.description = Math.max(maxPropertyLength.description, description?.length ?? 0);
+          maxPropertyLength.cron = Math.max(maxPropertyLength.cron, cron.length);
+          maxPropertyLength.audio = Math.max(maxPropertyLength.audio, audio.length);
+          responses.push([name, description ?? "None", cron, audio, mute ? "Yes" : "No" ]);
         }
-        if (response.length === 0) {
+        if (responses.length === 0) {
           await interaction.reply("No scheduled intervals");
           return;
         }
-        await interaction.reply(response.join("\n"));
+        const table = new Table({
+          head: ['Name', 'Description', 'Cron', 'Audio', 'Mute'],
+          colWidths: [
+            maxPropertyLength.name + 2,
+            maxPropertyLength.description + 2,
+            maxPropertyLength.cron + 2,
+            maxPropertyLength.audio + 2,
+            6,
+          ],
+        });
+        table.push(...responses);
+        await interaction.reply("```" + table.toString() + "```");
         return;
       }
       case 'add': {
@@ -109,6 +132,12 @@ export class ScheduleCommand implements Command {
         try {
           await this.configService.addSoundCrons(interaction.guildId, [interval]);
         } catch (err) {
+          if (err instanceof AddSoundCronError) {
+            if (err.reason === AddFailureReason.AlreadyExists) {
+              await interaction.reply(`Interval with name ${name} already exists`);
+              return;
+            }
+          }
           Logger.error("Failed to add interval", err);
           await interaction.reply("Failed to add interval");
           return;

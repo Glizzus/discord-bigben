@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@discordjs/voice": "^0.16.0",
+    "cli-table3": "^0.6.3",
     "cron": "^2.3.0",
     "debug": "^4.3.4",
     "discord.js": "^14.9.0",
