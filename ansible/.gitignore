@@ -1,4 +1,2 @@
-*.retry
-
-vars/custom.yml
-inventory
+secrets.yml
+venv/

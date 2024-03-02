@@ -1,4 +1,0 @@
-node_version: "20"
-
-bigben_port: 3000
-bigben_mariadb_uri: "mariadb://{{ mariadb_user }}:{{ mariadb_password }}@localhost/{{ mariadb_database }}"

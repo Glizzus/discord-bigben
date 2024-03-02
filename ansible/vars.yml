@@ -1,0 +1,7 @@
+mariadb_user: "dev"
+mariadb_password: "dev"
+mariadb_database: "bigben-dev"
+mariadb_root_password: "root"
+mariadb_uri: "mariadb://$MARIADB_USER:$MARIADB_PASSWORD@mariadb:3306/$MARIADB_DATABASE"
+
+redis_host: "redis"

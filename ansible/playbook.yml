@@ -1,0 +1,37 @@
+- name: Provision
+  hosts: controller
+  become: true
+  vars_files:
+    - vars.yml
+    - secrets.yml
+  roles:
+    - role: geerlingguy.docker
+    - role: geerlingguy.pip
+      vars:
+        pip_install_packages:
+          - name: docker
+  tasks:
+    - name: Clone the repository
+      ansible.builtin.git:
+        repo: https://github.com/Glizzus/discord-bigben
+        dest: /srv/discord-bigben
+        # We clone bare because we are doing a deployment
+        version: main
+        bare: true
+
+    - name: Up with Docker Compose
+      community.docker.docker_compose:
+        build: true
+        restarted: true
+        project_src: /srv/discord-bigben
+      environment:
+        DISCORD_TOKEN: "{{ discord_token }}"
+        CLIENT_ID: "{{ client_id }}"
+
+        MARIADB_USER: "{{ mariadb_user }}"
+        MARIADB_PASSWORD: "{{ mariadb_password }}"
+        MARIADB_DATABASE: "{{ mariadb_database }}"
+        MARIADB_ROOT_PASSWORD: "{{ mariadb_root_password }}"
+        MARIADB_URI: "mariadb://{{ mariadb_user }}:{{ mariadb_password }}@mariadb:3306/{{ mariadb_database }}"
+
+        REDIS_HOST: "{{ redis_host }}"
