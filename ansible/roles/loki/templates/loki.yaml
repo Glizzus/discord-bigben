@@ -1,0 +1,12 @@
+auth_enabled: true
+
+common:
+  storage:
+    s3:
+      s3: 
+  ring:
+    kvstore:
+      store: consul
+      consul:
+        address: {{ consul_address }}
+        acl_token: {{ consul_acl_token }}

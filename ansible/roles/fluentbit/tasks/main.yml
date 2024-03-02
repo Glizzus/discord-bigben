@@ -1,0 +1,25 @@
+- name: Add FluentBit repository
+  ansible.builtin.deb822_repository:
+    name: fluent-bit
+    types: [deb]
+    uris: "https://packages.fluentbit.io/{{ ansible_distribution_release|lower }}"
+    signed_by: https://packages.fluentbit.io/fluentbit.key
+    suites: ["{{ ansible_distribution_release|lower }}"]
+    components: [main]
+    state: present
+    enabled: true
+
+- name: Copy FluentBit configuration file
+  ansible.builtin.template:
+    src: fluent-bit.conf.j2
+    dest: /etc/fluent-bit/fluent-bit.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart fluent-bit
+
+- name: Start FluentBit service
+  ansible.builtin.service:
+    name: fluent-bit
+    state: started
+    enabled: true

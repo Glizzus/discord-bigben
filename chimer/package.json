@@ -1,0 +1,31 @@
+{
+  "name": "@discord-bigben/chimer",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "../LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --config ../.eslintrc.js"
+  },
+  "author": "Cal Crosby <calcrosbydev@outlook.com>",
+  "description": "The worker component of the bigben Discord bot",
+  "dependencies": {
+    "@discordjs/voice": "^0.16.1",
+    "bullmq": "^5.3.1",
+    "debug": "^4.3.4",
+    "discord.js": "^14.14.1",
+    "ffmpeg-static": "^5.2.0",
+    "libsodium-wrappers": "^0.7.13",
+    "undici": "^6.6.2",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/debug": "^4.1.12",
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}
