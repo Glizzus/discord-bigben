@@ -1,2 +1,6 @@
-.env*
-!.env.template
+.env
+.env*.local
+
+node_modules/
+dist/
+tsconfig.tsbuildinfo

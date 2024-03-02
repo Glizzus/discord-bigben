@@ -1,8 +1,0 @@
-README.md
-Dockerfile
-docker-compose.yml
-.gitignore
-.env*
-logs/
-node_modules/
-dist/

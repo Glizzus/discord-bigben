@@ -1,18 +1,41 @@
 version: "3.5"
 
 services:
-  bigben:
+  campa:
     ports:
-      - 3000:3000
+      - 3001:3001
     build:
-      context: ./bigben
-      dockerfile: Dockerfile  
+      context: ./campa
+      dockerfile: Dockerfile
     environment:
-      - BIGBEN_TOKEN=${BIGBEN_TOKEN}
-      - BIGBEN_CLIENT_ID=${BIGBEN_CLIENT_ID}
-      - BIGBEN_MARIADB_URI=${BIGBEN_MARIADB_URI}
+      REDIS_HOST: ${REDIS_HOST}
+      MARIADB_URI: ${MARIADB_URI}
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      CLIENT_ID: ${CLIENT_ID}
+      DEBUG: ${DEBUG}
+    depends_on:
+      - redis
+      - mariadb
 
-      - DEBUG=${DEBUG}
+  chimer:
+    ports:
+      - 3002:3002
+    build:
+      context: ./chimer
+      dockerfile: Dockerfile
+    environment:
+      REDIS_HOST: ${REDIS_HOST}
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DEBUG: ${DEBUG}
+    depends_on:
+      - redis
+  
+  redis:
+    ports:
+      - 6379:6379
+    image: redis
+    volumes:
+      - bigben-redis:/data
 
   mariadb:
     ports:
@@ -21,13 +44,13 @@ services:
       context: ./mariadb
       dockerfile: Dockerfile
     environment:
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
-      - MARIADB_DATABASE=${MARIADB_DATABASE}
-      - MARIADB_USER=${MARIADB_USER}
-      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
     volumes:
       - bigben-mariadb:/var/lib/mysql
-      
 
 volumes:
   bigben-mariadb:
+  bigben-redis:
