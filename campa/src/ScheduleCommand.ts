@@ -1,15 +1,6 @@
 import * as discord from "discord.js";
-import {
-  type ChatInputCommandInteraction,
-  type AutocompleteInteraction,
-} from "discord.js";
 import { type SoundCronService } from "./SoundCronService";
-
-export interface Command {
-  data: ReturnType<InstanceType<typeof discord.SlashCommandBuilder>["toJSON"]>;
-  execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
-  autocomplete: (interaction: AutocompleteInteraction) => Promise<void>;
-}
+import { Command } from "./Command";
 
 export class ScheduleCommand implements Command {
   constructor(private readonly soundCronService: SoundCronService) {}
@@ -36,11 +27,17 @@ export class ScheduleCommand implements Command {
             .setDescription("Cron expression")
             .setRequired(true),
         )
+        /* The following two are mutually exclusive, but the builder
+        is not sophisticated enough to express that */
         .addStringOption((opt) =>
           opt
-            .setName("audio")
+            .setName("audio_url")
             .setDescription("Audio to play")
-            .setRequired(true),
+        )
+        .addAttachmentOption((opt) =>
+          opt
+            .setName("audio_file")
+            .setDescription("Audio file to play")
         )
         .addBooleanOption((opt) =>
           opt.setName("mute").setDescription("Mute the bot"),
@@ -84,7 +81,17 @@ export class ScheduleCommand implements Command {
   ): Promise<void> {
     const name = interaction.options.getString("name", true);
     const cron = interaction.options.getString("cron", true);
-    const audio = interaction.options.getString("audio", true);
+    const audioUrl = interaction.options.getString("audio_url");
+    const audioFile = interaction.options.getAttachment("audio_file");
+
+    if (audioUrl === null && audioFile === null) {
+      throw new Error("audio_url or audio_file is required, please provide one");
+    }
+
+    if (audioUrl !== null && audioFile !== null) {
+      throw new Error("audio_url and audio_file are mutually exclusive, please provide only one");
+    }
+
     const mute = interaction.options.getBoolean("mute") ?? false;
     const description =
       interaction.options.getString("description") ?? undefined;
@@ -92,7 +99,7 @@ export class ScheduleCommand implements Command {
     const soundCron = {
       name,
       cron,
-      audio,
+      audio: audioUrl ?? audioFile!.url,
       mute,
       description,
     };

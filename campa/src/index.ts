@@ -3,7 +3,9 @@ import * as mariadb from "mariadb";
 import * as bullmq from "bullmq";
 import { MariaDbSoundCronRepo } from "./SoundCronRepo";
 import { type SoundCronJob, SoundCronService } from "./SoundCronService";
-import { type Command, ScheduleCommand } from "./ScheduleCommand";
+import { logger } from "./logging";
+import { ScheduleCommand } from "./ScheduleCommand";
+import { Command } from "./Command";
 
 export interface SoundCron {
   name: string;
@@ -89,11 +91,16 @@ async function main(): Promise<void> {
 
   discordClient.on(discord.Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
-      const command = commandMap[interaction.commandName];
-      if (command !== undefined) {
-        await command.execute(interaction);
-      } else {
-        await interaction.reply("Unknown command");
+      try {
+        const command = commandMap[interaction.commandName];
+        if (command !== undefined) {
+          await command.execute(interaction);
+        } else {
+          await interaction.reply("Unknown command");
+        }
+      } catch (err) {
+        logger.error(err);
+        await interaction.reply("An unknown error occurred");
       }
     } else if (interaction.isAutocomplete()) {
       const command = commandMap[interaction.commandName];
