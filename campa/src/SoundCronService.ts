@@ -2,14 +2,13 @@ import type * as bullmq from "bullmq";
 import * as cronparser from "cron-parser";
 import { type SoundCron } from ".";
 import { type SoundCronRepo, SoundCronServiceError } from "./SoundCronRepo";
+import { SoundCronHeartbeat, type SoundCronJob } from "@discord-bigben/types";
+import { UUID } from "crypto";
+import { WorkerRecordRepo } from "./WorkerRecordRepo";
+import winston from "winston";
+import { debugLogger } from "./logging";
 
 type SoundCronQueue = bullmq.Queue<SoundCronJob>;
-
-export interface SoundCronJob {
-  serverId: string;
-  audio: string;
-  mute: boolean;
-}
 
 /**
  * A service for managing soundcrons. This service is responsible for adding and removing soundcrons.
@@ -17,25 +16,68 @@ export interface SoundCronJob {
  */
 export class SoundCronService {
   constructor(
+    private readonly workerMapRepo: WorkerRecordRepo,
     private readonly soundCronRepo: SoundCronRepo,
     private readonly soundCronQueue: SoundCronQueue,
+    private readonly logger: winston.Logger
   ) {}
+
+  private async resurrectSoundCronsForWorker(workerId: UUID): Promise<void> {
+    const keys = await this.workerMapRepo.retrieveWorkerRecords(workerId);
+    await Promise.all(keys.map(async (key) => {
+      const [serverId, name] = key.split(":", 2);
+      const soundCron = await this.soundCronRepo.getCron(serverId, name);
+      if (soundCron === null) {
+        const message = `Somehow there was a worker record for a soundcron that doesn't exist in the database: ${key}`;
+        this.logger.warn(message);
+        return;
+      }
+      await this.enqueueCron(serverId, soundCron);
+    }));
+  }
 
   private async enqueueCron(
     serverId: string,
     soundCron: SoundCron,
   ): Promise<void> {
+    // This key is guaranteed to be unique by our database schema
     const key = `${serverId}:${soundCron.name}`;
-    const job: SoundCronJob = {
+    const jobData: SoundCronJob = {
       serverId,
+      name: soundCron.name,
+      cron: soundCron.cron,
+      timezone: soundCron.timezone ?? "UTC",
       audio: soundCron.audio,
       mute: soundCron.mute ?? false,
+      excludeChannels: soundCron.excludeChannels ?? [],
     };
-    await this.soundCronQueue.add(key, job, {
-      repeat: {
-        pattern: soundCron.cron,
-      },
+
+    let jobPickedUp = false;
+    let workerId: UUID | null = null;
+
+    this.soundCronQueue.on('progress', async (job, progress) => {
+      const heartBeat = progress as SoundCronHeartbeat;
+      debugLogger(`Received heartbeat from worker ${heartBeat.workerId} for soundcron ${heartBeat.key}`)
+      workerId = heartBeat.workerId;
+      await this.workerMapRepo.addWorkerRecord(heartBeat.workerId, heartBeat.key);
+      clearTimeout(resurrectOnFail);
     });
+    const resurrectOnFail = setTimeout(async () => {
+      if (workerId !== null) {
+        jobPickedUp = true;
+        await this.resurrectSoundCronsForWorker(workerId);
+      }
+    }, 1000 * 20);
+
+    while (!jobPickedUp) {
+      /* We do not use repeatable jobs because bullmq does not support
+      time zones. Instead, the scheduling happens on the backend.
+      This does mean that we need a heartbeat mechanism to reschedule
+      failed jobs. */
+      await this.soundCronQueue.add(key, jobData);
+      await this.workerMapRepo.addUnassigned(key);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   }
 
   /**

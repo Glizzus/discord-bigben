@@ -2,16 +2,20 @@ import * as discord from "discord.js";
 import * as mariadb from "mariadb";
 import * as bullmq from "bullmq";
 import { MariaDbSoundCronRepo } from "./SoundCronRepo";
-import { type SoundCronJob, SoundCronService } from "./SoundCronService";
+import { SoundCronService } from "./SoundCronService";
 import { logger } from "./logging";
 import { ScheduleCommand } from "./ScheduleCommand";
 import { Command } from "./Command";
+import { type SoundCronJob } from "@discord-bigben/types";
+import { Redis } from "ioredis";
+import { RedisWorkerRecordRepo } from "./WorkerRecordRepo";
 
 export interface SoundCron {
   name: string;
   cron: string;
   audio: string;
 
+  timezone?: string;
   excludeChannels?: string[];
   mute?: boolean;
   description?: string;
@@ -29,9 +33,6 @@ const clientId =
     throw new Error("CLIENT_ID is required");
   })();
 
-const pool = mariadb.createPool(mariadbUri);
-const soundCronRepo = new MariaDbSoundCronRepo(pool);
-
 const redisHost =
   process.env.REDIS_HOST ??
   (() => {
@@ -46,15 +47,6 @@ const redisPort =
     return defaultPort;
   })();
 
-const soundCronQueue = new bullmq.Queue<SoundCronJob>("soundCron", {
-  connection: {
-    host: redisHost,
-    port: parseInt(redisPort),
-  },
-});
-
-const soundCronService = new SoundCronService(soundCronRepo, soundCronQueue);
-
 const options: discord.ClientOptions = {
   intents: [
     discord.GatewayIntentBits.Guilds,
@@ -64,6 +56,24 @@ const options: discord.ClientOptions = {
 };
 
 async function main(): Promise<void> {
+
+  const redis = new Redis(parseInt(redisPort), redisHost);
+  const workerRepo = new RedisWorkerRecordRepo(redis);
+
+  const pool = mariadb.createPool(mariadbUri);
+  const soundCronRepo = new MariaDbSoundCronRepo(pool);
+
+  const soundCronQueue = new bullmq.Queue<SoundCronJob>("soundCron", {
+    connection: redis,
+  })
+
+  const soundCronService = new SoundCronService(
+    workerRepo,
+    soundCronRepo,
+    soundCronQueue,
+    logger,
+  );
+
   /* Kick off all of the soundcrons in the database.
   We don't need to await this immediately */
   const allCronsStarted = soundCronService.startAllCrons();

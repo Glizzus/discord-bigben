@@ -1,7 +1,8 @@
 {
   "name": "@discord-bigben/types",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "The shared types for the bigben project. This includes things that cross API boundaries.",
+  "types": "dist/index.d.ts",
   "files": [
     "dist/index.d.ts",
     "../LICENSE",
@@ -10,6 +11,11 @@
   "author": "Cal Crosby <calcrosbydev@outlook.com>",
   "license": "AGPL-3.0-only",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
   }
 }
