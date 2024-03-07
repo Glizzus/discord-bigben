@@ -2,11 +2,8 @@ version: "3.5"
 
 x-common:
   chimer: &chimer
-    build:
-      context: ./chimer
-      dockerfile: Dockerfile
     environment:
-      REDIS_HOST: ${REDIS_HOST}
+      REDIS_HOST: redis
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DEBUG: ${DEBUG}
   depends_on:
@@ -14,17 +11,13 @@ x-common:
 
 services:
   campa:
-    ports:
-      - 3001:3001
-    build:
-      context: ./campa
-      dockerfile: Dockerfile
+    build: ./campa
     environment:
-      REDIS_HOST: ${REDIS_HOST}
-      MARIADB_URI: ${MARIADB_URI}
+      REDIS_HOST: redis
+      MARIADB_URI: mariadb://${MARIADB_USER}:${MARIADB_PASSWORD}@mariadb:3306/${MARIADB_DATABASE}
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       CLIENT_ID: ${CLIENT_ID}
-      DEBUG: ${DEBUG}
+      DEBUG: campa:*
     depends_on:
       - redis
       - mariadb
@@ -35,26 +28,18 @@ services:
   chimer2:
     <<: *chimer
   
+  chimer3:
+    <<: *chimer
+
   redis:
-    ports:
-      - 6379:6379
     image: redis
-    volumes:
-      - bigben-redis:/data
 
   mariadb:
-    ports:
-      - 3306:3306
-    build:
-      context: ./mariadb
-      dockerfile: Dockerfile
     environment:
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-    volumes:
-      - bigben-mariadb:/var/lib/mysql
 
 volumes:
   bigben-mariadb:

@@ -1,0 +1,48 @@
+version: "3.5"
+
+x-common:
+  chimer: &chimer
+    build: ./chimer
+    environment:
+      DEBUG: chimer:*
+
+services:
+  campa:
+    build: ./campa
+    environment:
+      MARIADB_URI: mariadb://dev:dev@mariadb/bigben-dev
+      DEBUG: campa
+    depends_on:
+      - redis
+      - mariadb
+  
+  redis:
+    ports:
+      - 6379:6379
+    volumes:
+      - bigben-redis:/data
+  
+  mariadb:
+    build: ./mariadb
+    ports:
+      - 3306:3306
+    environment:
+      MARIADB_USER: dev
+      MARIADB_DATABASE: bigben-dev
+      MARIADB_PASSWORD: dev
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - bigben-mariadb:/var/lib/mysql
+
+  chimer1:
+    <<: *chimer
+  
+  chimer2:
+    <<: *chimer
+  
+  chimer3:
+    <<: *chimer
+
+volumes:
+  bigben-mariadb:
+  bigben-redis:

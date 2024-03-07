@@ -206,13 +206,15 @@ async function main() {
   const workerId = randomUUID();
   setupWorker(workerId, redisConn, logger, discordClient);
 
+  const heartbeatDebugLogger = debugLogger.extend("heartbeat");
+
   new CronJob(
     "*/5 * * * * *",
     async () => {
       const heartbeat: SoundCronHeartbeat = {
         workerId,
       };
-      debugLogger(`Sending heartbeat for worker ${workerId}`)
+      heartbeatDebugLogger(`Sending heartbeat for worker ${workerId}`)
       const expireTime = 10; // seconds
       await redisConn.setex(`heartbeat:${workerId}`, expireTime, JSON.stringify(heartbeat));
     },
@@ -222,7 +224,6 @@ async function main() {
     true
   );
   // Eternal promise
-  await new Promise(() => {});
 }
 
 main().catch((err) => {
