@@ -1,39 +1,98 @@
-import type * as bullmq from "bullmq";
+import * as bullmq from "bullmq";
 import * as cronparser from "cron-parser";
 import { type SoundCron } from ".";
 import { type SoundCronRepo, SoundCronServiceError } from "./SoundCronRepo";
-import { SoundCronHeartbeat, type SoundCronJob } from "@discord-bigben/types";
+import {
+  SoundCronJobEstablished,
+  type SoundCronJob,
+} from "@discord-bigben/types";
 import { UUID } from "crypto";
 import { WorkerRecordRepo } from "./WorkerRecordRepo";
 import winston from "winston";
+import { Redis } from "ioredis";
 import { debugLogger } from "./logging";
 
-type SoundCronQueue = bullmq.Queue<SoundCronJob>;
+type SoundCronQueue = bullmq.Queue<SoundCronJob, SoundCronJobEstablished>;
 
 /**
  * A service for managing soundcrons. This service is responsible for adding and removing soundcrons.
  * This handles data persistence and queue management.
  */
 export class SoundCronService {
+  private readonly soundCronQueue: SoundCronQueue;
+  private readonly soundCronQueueEvents: bullmq.QueueEvents;
+
   constructor(
     private readonly workerMapRepo: WorkerRecordRepo,
     private readonly soundCronRepo: SoundCronRepo,
-    private readonly soundCronQueue: SoundCronQueue,
-    private readonly logger: winston.Logger
-  ) {}
+    private readonly redis: Redis,
+    private readonly logger: winston.Logger,
+  ) {
+    this.soundCronQueue = new bullmq.Queue("soundCron", {
+      connection: redis,
+    });
+
+    this.soundCronQueueEvents = new bullmq.QueueEvents("soundCron", {
+      connection: redis,
+    }).on("completed", async (job) => {
+      const retrievedJob = await bullmq.Job.fromId<
+        SoundCronJob,
+        SoundCronJobEstablished
+      >(this.soundCronQueue, job.jobId);
+      if (retrievedJob === undefined) {
+        this.logger.warn(
+          `Job ${job.jobId} completed, but could not be retrieved from the queue. This is unusual.`,
+        );
+        return;
+      }
+      const { workerId, key } = retrievedJob.returnvalue;
+      await this.workerMapRepo.addWorkerRecord(workerId, key);
+      const heartbeatInterval = 10000;
+      const timeout = setInterval(async () => {
+        if (await this.checkWorkerAlive(workerId)) {
+          debugLogger(`Worker ${workerId} is alive`);
+          return;
+        }
+        this.logger.warn(`Worker ${workerId} has died. Attempting to resurrect jobs`);
+        await this.resurrectSoundCronsForWorker(workerId);
+        clearInterval(timeout);
+      }, heartbeatInterval);
+    });
+  }
+
+  private async checkWorkerAlive(workerId: UUID): Promise<boolean> {
+    const exists = await this.redis.exists(`heartbeat:${workerId}`);
+    return exists === 1;
+  }
 
   private async resurrectSoundCronsForWorker(workerId: UUID): Promise<void> {
     const keys = await this.workerMapRepo.retrieveWorkerRecords(workerId);
-    await Promise.all(keys.map(async (key) => {
-      const [serverId, name] = key.split(":", 2);
-      const soundCron = await this.soundCronRepo.getCron(serverId, name);
-      if (soundCron === null) {
-        const message = `Somehow there was a worker record for a soundcron that doesn't exist in the database: ${key}`;
-        this.logger.warn(message);
-        return;
-      }
-      await this.enqueueCron(serverId, soundCron);
-    }));
+    await Promise.all(
+      keys.map(async (key) => {
+        // We want as many of these to succeed as possible, so we catch and log errors.
+        try {
+          const [serverId, name] = key.split(":", 2);
+          const soundCron = await this.soundCronRepo.getCron(serverId, name);
+          if (soundCron === null) {
+            const message = `Somehow there was a worker record for a soundcron that doesn't exist in the database: ${key}`;
+            this.logger.warn(message);
+            return;
+          }
+          await this.enqueueCron(serverId, soundCron);
+        } catch (err) {
+          if (err instanceof Error) {
+            this.logger.error(
+              `Error resurrecting soundcron ${key} for worker ${workerId}`,
+              err,
+            );
+          } else {
+            this.logger.error(
+              `Unknown error resurrecting soundcron ${key} for worker ${workerId} - error is not an instance of Error`,
+            );
+          }
+        }
+      }),
+    );
   }
 
   private async enqueueCron(
@@ -51,33 +110,8 @@ export class SoundCronService {
       mute: soundCron.mute ?? false,
       excludeChannels: soundCron.excludeChannels ?? [],
     };
-
-    let jobPickedUp = false;
-    let workerId: UUID | null = null;
-
-    this.soundCronQueue.on('progress', async (job, progress) => {
-      const heartBeat = progress as SoundCronHeartbeat;
-      debugLogger(`Received heartbeat from worker ${heartBeat.workerId} for soundcron ${heartBeat.key}`)
-      workerId = heartBeat.workerId;
-      await this.workerMapRepo.addWorkerRecord(heartBeat.workerId, heartBeat.key);
-      clearTimeout(resurrectOnFail);
-    });
-    const resurrectOnFail = setTimeout(async () => {
-      if (workerId !== null) {
-        jobPickedUp = true;
-        await this.resurrectSoundCronsForWorker(workerId);
-      }
-    }, 1000 * 20);
-
-    while (!jobPickedUp) {
-      /* We do not use repeatable jobs because bullmq does not support
-      time zones. Instead, the scheduling happens on the backend.
-      This does mean that we need a heartbeat mechanism to reschedule
-      failed jobs. */
-      await this.soundCronQueue.add(key, jobData);
-      await this.workerMapRepo.addUnassigned(key);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    await this.soundCronQueue.add(key, jobData);
+    await this.workerMapRepo.addUnassigned(key);
   }
 
   /**

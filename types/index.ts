@@ -10,9 +10,11 @@ export interface SoundCronJob {
   excludeChannels: string[];
 }
 
+export interface SoundCronJobEstablished {
+  key: string;
+  workerId: UUID;
+}
+
 export interface SoundCronHeartbeat {
   workerId: UUID;
-  key: string;
-  lastRan: Date;
-  timesActivated: number;
 }

@@ -10,7 +10,6 @@ export interface WorkerRecordRepo {
 }
 
 export class RedisWorkerRecordRepo implements WorkerRecordRepo {
-
   constructor(private readonly redis: Redis) {}
 
   private keyify(workerId: UUID): string {
@@ -18,7 +17,8 @@ export class RedisWorkerRecordRepo implements WorkerRecordRepo {
   }
 
   async addWorkerRecord(workerId: UUID, jobId: string): Promise<void> {
-    await this.redis.multi()
+    await this.redis
+      .multi()
       .srem("unassigned", jobId)
       .sadd(this.keyify(workerId), jobId)
       .exec();

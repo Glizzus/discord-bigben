@@ -3,7 +3,7 @@ import * as mariadb from "mariadb";
 import * as bullmq from "bullmq";
 import { MariaDbSoundCronRepo } from "./SoundCronRepo";
 import { SoundCronService } from "./SoundCronService";
-import { logger } from "./logging";
+import { debugLogger, logger } from "./logging";
 import { ScheduleCommand } from "./ScheduleCommand";
 import { Command } from "./Command";
 import { type SoundCronJob } from "@discord-bigben/types";
@@ -43,7 +43,7 @@ const redisPort =
   process.env.REDIS_PORT ??
   (() => {
     const defaultPort = "6379";
-    console.warn(`REDIS_PORT is not set, defaulting to ${defaultPort}`);
+    debugLogger(`REDIS_PORT is not set, defaulting to ${defaultPort}`);
     return defaultPort;
   })();
 
@@ -56,21 +56,18 @@ const options: discord.ClientOptions = {
 };
 
 async function main(): Promise<void> {
-
-  const redis = new Redis(parseInt(redisPort), redisHost);
+  const redis = new Redis(parseInt(redisPort), redisHost, {
+    maxRetriesPerRequest: null
+  });
   const workerRepo = new RedisWorkerRecordRepo(redis);
 
   const pool = mariadb.createPool(mariadbUri);
   const soundCronRepo = new MariaDbSoundCronRepo(pool);
 
-  const soundCronQueue = new bullmq.Queue<SoundCronJob>("soundCron", {
-    connection: redis,
-  })
-
   const soundCronService = new SoundCronService(
     workerRepo,
     soundCronRepo,
-    soundCronQueue,
+    redis,
     logger,
   );
 
@@ -94,10 +91,9 @@ async function main(): Promise<void> {
   };
 
   const rest = new discord.REST().setToken(discordToken);
-  await rest.put(
-    discord.Routes.applicationCommands(clientId),
-    { body: Object.values(commandMap).map((c) => c.data) },
-  );
+  await rest.put(discord.Routes.applicationCommands(clientId), {
+    body: Object.values(commandMap).map((c) => c.data),
+  });
 
   discordClient.on(discord.Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
@@ -123,7 +119,7 @@ async function main(): Promise<void> {
   // This should eventually finish
   await allCronsStarted;
   const cronsStartedDuration = Date.now() - cronsStartedTime;
-  console.log(`All crons started in ${cronsStartedDuration}ms`);
+  logger.info(`All crons started in ${cronsStartedDuration}ms`);
 }
 
 main().catch((err) => {

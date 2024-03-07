@@ -1,5 +1,17 @@
 version: "3.5"
 
+x-common:
+  chimer: &chimer
+    build:
+      context: ./chimer
+      dockerfile: Dockerfile
+    environment:
+      REDIS_HOST: ${REDIS_HOST}
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DEBUG: ${DEBUG}
+  depends_on:
+    - redis
+
 services:
   campa:
     ports:
@@ -17,18 +29,11 @@ services:
       - redis
       - mariadb
 
-  chimer:
-    ports:
-      - 3002:3002
-    build:
-      context: ./chimer
-      dockerfile: Dockerfile
-    environment:
-      REDIS_HOST: ${REDIS_HOST}
-      DISCORD_TOKEN: ${DISCORD_TOKEN}
-      DEBUG: ${DEBUG}
-    depends_on:
-      - redis
+  chimer1:
+    <<: *chimer
+  
+  chimer2:
+    <<: *chimer
   
   redis:
     ports:

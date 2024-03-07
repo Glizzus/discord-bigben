@@ -4,11 +4,10 @@ import * as discordVoice from "@discordjs/voice";
 import * as undici from "undici";
 import { debugLogger, logger } from "./logging";
 import winston from "winston";
-import { type SoundCronJob } from "@discord-bigben/types";
+import { SoundCronHeartbeat, type SoundCronJob } from "@discord-bigben/types";
 import { Redis } from "ioredis";
 import { CronJob } from "cron";
-import { randomUUID } from "crypto";
-import { escape } from "querystring";
+import { UUID, randomUUID } from "crypto";
 
 const options: discord.ClientOptions = {
   intents: [
@@ -42,23 +41,20 @@ function largestVoiceChannel(guild: discord.Guild) {
   }, voiceChannels.first());
 }
 
-const workerId = randomUUID();
+export interface SoundCronJobEstablished {
+  key: string;
+  workerId: UUID;
+}
+
+const takenKeys = new Set<string>();
+
 function processorFactory(
+  workerId: UUID,
   discordClient: discord.Client,
   logger: winston.Logger,
 ) {
-  return async (job: bullmq.Job<SoundCronJob>) => {
-    // Information that we will send as our heartbeat.
-    // This is not essential, but it is a more useful heartbeat than just the job id.
-    let lastRan: Date | null = null;
-    let timesActivated = 0;
-
+  return async (job: bullmq.Job<SoundCronJob, SoundCronJobEstablished>) => {
     const workFunction = async () => {
-
-      // Update the heartbeat information
-      timesActivated++;
-      lastRan = new Date();
-
       const { serverId, audio, mute } = job.data;
       debugLogger(`Playing audio ${audio} in server ${serverId}`);
       const guild = await discordClient.guilds.fetch(serverId);
@@ -67,7 +63,9 @@ function processorFactory(
         debugLogger("No voice channels found - leaving");
         return;
       }
-      debugLogger(`Found voice channel ${maxChannel.name} with ${maxChannel.members.size} members`);
+      debugLogger(
+        `Found voice channel ${maxChannel.name} with ${maxChannel.members.size} members`,
+      );
       const { body } = await undici.request(audio);
       const resource = discordVoice.createAudioResource(body);
       const connection = discordVoice.joinVoiceChannel({
@@ -97,9 +95,6 @@ function processorFactory(
           return;
         }
         debugLogger("Subscribed to audio player");
-        await new Promise((resolve) => {
-          setTimeout(resolve, 2000);
-        });
         // It takes a while for the audio player to start playing the resource
         await discordVoice.entersState(
           audioPlayer,
@@ -126,33 +121,38 @@ function processorFactory(
       }
     };
     const { serverId, name, cron, timezone } = job.data;
-    const workJob = new CronJob(cron, workFunction, null, true, timezone);
-    const heartBeatJob = new CronJob(
-      "*/5 * * * * *",
-      () => {
-        const key = `${serverId}:${name}`
-        job.updateProgress({ workerId, key, lastRan, timesActivated });
-      },
-      null,
-      true,
-      timezone,
-    );
-    // Ensure job never finishes
-    await new Promise(() => {});
+    const key = `${serverId}:${name}`;
+    if (takenKeys.has(key)) {
+      logger.error(
+        `Soundcron ${key} is already taken by this worker.`,
+      );
+    } else {
+      takenKeys.add(key);
+      const onComplete = () => {
+        logger.warn(
+          `Soundcron ${key} has completed. This is bad because jobs should never complete`,
+        );
+      };
+      new CronJob(cron, workFunction, onComplete, true, timezone);
+    }
+    return {
+      key,
+      workerId,
+    };
   };
 }
 
 function setupWorker(
+  workerId: UUID,
   redis: Redis,
-  discordClient: discord.Client,
   logger: winston.Logger,
-): bullmq.Worker<SoundCronJob> {
+  discordClient: discord.Client,
+): bullmq.Worker<SoundCronJob, SoundCronJobEstablished> {
   return new bullmq.Worker(
     "soundCron",
-    processorFactory(discordClient, logger),
+    processorFactory(workerId, discordClient, logger),
     {
-      connection: redis,
-      autorun: false,
+      connection: redis
     },
   )
     .on("ready", () => {
@@ -198,16 +198,31 @@ async function main() {
 
   const redisConn = new Redis(parseInt(redisPort), redisHost, {
     // I had to set this to null because it errors if I don't
-    maxRetriesPerRequest: null
+    maxRetriesPerRequest: null,
   });
   await redisConn.ping();
   debugLogger(`Successfully pinged redis at ${redisHost}:${redisPort}`);
 
-  debugLogger(
-    `Creating worker connection to redis at ${redisHost}:${redisPort}`,
+  const workerId = randomUUID();
+  setupWorker(workerId, redisConn, logger, discordClient);
+
+  new CronJob(
+    "*/5 * * * * *",
+    async () => {
+      const heartbeat: SoundCronHeartbeat = {
+        workerId,
+      };
+      debugLogger(`Sending heartbeat for worker ${workerId}`)
+      const expireTime = 10; // seconds
+      await redisConn.setex(`heartbeat:${workerId}`, expireTime, JSON.stringify(heartbeat));
+    },
+    () => {
+      logger.error("Heartbeat job completed - this should never happen")
+    },
+    true
   );
-  const worker = setupWorker(redisConn, discordClient, logger);
-  await worker.run();
+  // Eternal promise
+  await new Promise(() => {});
 }
 
 main().catch((err) => {

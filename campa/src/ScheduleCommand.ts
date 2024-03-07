@@ -30,14 +30,10 @@ export class ScheduleCommand implements Command {
         /* The following two are mutually exclusive, but the builder
         is not sophisticated enough to express that */
         .addStringOption((opt) =>
-          opt
-            .setName("audio_url")
-            .setDescription("Audio to play")
+          opt.setName("audio_url").setDescription("Audio to play"),
         )
         .addAttachmentOption((opt) =>
-          opt
-            .setName("audio_file")
-            .setDescription("Audio file to play")
+          opt.setName("audio_file").setDescription("Audio file to play"),
         )
         .addBooleanOption((opt) =>
           opt.setName("mute").setDescription("Mute the bot"),
@@ -85,11 +81,15 @@ export class ScheduleCommand implements Command {
     const audioFile = interaction.options.getAttachment("audio_file");
 
     if (audioUrl === null && audioFile === null) {
-      throw new Error("audio_url or audio_file is required, please provide one");
+      throw new Error(
+        "audio_url or audio_file is required, please provide one",
+      );
     }
 
     if (audioUrl !== null && audioFile !== null) {
-      throw new Error("audio_url and audio_file are mutually exclusive, please provide only one");
+      throw new Error(
+        "audio_url and audio_file are mutually exclusive, please provide only one",
+      );
     }
 
     const mute = interaction.options.getBoolean("mute") ?? false;
