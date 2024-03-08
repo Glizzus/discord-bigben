@@ -2,39 +2,73 @@ import type mariadb from "mariadb";
 import { type SoundCron } from ".";
 import { debugLogger } from "./logging";
 
-export type WithServerId<T> = T & { serverId: string };
-export type GroupedSoundCronRow = Omit<SoundCron, "excludeChannels"> & {
+type GroupedSoundCronRow = Omit<SoundCron, "excludeChannels"> & {
   excludeChannels: string;
 };
 
+/**
+ * A repository for soundcrons.
+ * This repository is responsible for adding, removing, and listing soundcrons.
+ */
 export interface SoundCronRepo {
+  /**
+   * Adds a soundCron for a server.
+   * @param serverId the server ID for the soundCron
+   * @param soundCron the data describing the soundCron
+   * @returns a promise that resolves when the soundCron has been added
+   */
   addCron: (serverId: string, soundCron: SoundCron) => Promise<void>;
+
+  /**
+   * Removes a soundCron from a server.
+   * @param serverId the server ID for the soundCron
+   * @param name the name of the soundCron to remove
+   * @returns a promise that resolves when the soundCron has been removed
+   */
   removeCron: (serverId: string, name: string) => Promise<void>;
 
+  /**
+   * Gets one soundCron from a server by name.
+   * @param serverId the server ID for the soundCron
+   * @param name the name of the soundcron to get
+   * @returns a promise that resolves with the soundcron and its data
+   */
   getCron: (serverId: string, name: string) => Promise<SoundCron>;
+
+  /**
+   * Lists all soundCrons for a server.
+   * @param serverId the server ID for the soundCron
+   * @returns a promise that resolves with an array of soundcrons for the server
+   */
   listCrons: (serverId: string) => Promise<SoundCron[]>;
+
+  /**
+   * Lists all of the soundCrons for all servers.
+   * This is often used for startup to load all of the soundCrons.
+   * @returns a promise that resolves with a record of server IDs to soundcrons
+   */
   listAllCrons: () => Promise<Record<string, SoundCron[]>>;
 }
 
+/**
+ * A MariaDB implementation of the SoundCronRepo.
+ */
 export class MariaDbSoundCronRepo implements SoundCronRepo {
+  /**
+   * Constructs a new MariaDbSoundCronRepo.
+   * @param pool a mariadb pool to use for database connections
+   */
   constructor(private readonly pool: mariadb.Pool) {}
 
   async addCron(serverId: string, soundCron: SoundCron): Promise<void> {
-    const logHelp = (message: string): void => {
-      debugLogger(
-        `MariaDbSoundCronRepo addCron ${serverId}:${soundCron.name}: ${message}`,
-      );
-    };
-
     const conn = await this.pool.getConnection();
     try {
       await conn.beginTransaction();
-      logHelp("Transaction started");
 
       // 1. Create the server in the servers table if it doesn't exist
       const insertServerQuery =
         "INSERT IGNORE INTO servers (serverId) VALUES (?)";
-      logHelp(`Ensuring server ${serverId} exists`);
+      debugLogger(`Inserting server ${serverId} if it doesn't exist`);
       await conn.query(insertServerQuery, [serverId]);
 
       // 2. Insert the soundCron itself
@@ -42,24 +76,31 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
         "INSERT INTO soundCrons (serverId, name, cron, audio, mute, description) VALUES (?, ?, ?, ?, ?, ?)";
       const { name, cron, audio, mute, description } = soundCron;
       const params = [serverId, name, cron, audio, mute ?? false, description];
-      logHelp(`Inserting row with params: ${params.toString()}`);
+      debugLogger(
+        `Inserting soundCron ${serverId}:${soundCron.name} with params ${params.toString()}`,
+      );
       const { insertId } = await conn.query(insertSoundCronQuery, params);
-      logHelp(`Inserted row with id ${insertId}`);
+      debugLogger(
+        `Inserted soundCron ${serverId}:${soundCron.name} with ID ${insertId}`,
+      );
 
       // 3. Insert the excluded channels
-      if (soundCron.excludeChannels !== undefined) {
+      const { excludeChannels } = soundCron;
+      if (excludeChannels !== undefined) {
         const insertExcludeChannelsQuery =
           "INSERT INTO excludedChannels (soundCronId, channelId) VALUES (?, ?)";
-        logHelp(
-          `Inserting ${soundCron.excludeChannels.length} excluded channels`,
+        debugLogger(
+          `Inserting ${excludeChannels.length} excluded channels for soundCron ${serverId}:${soundCron.name}`,
         );
-        for (const channelId of soundCron.excludeChannels) {
-          logHelp(`Inserting excluded channel ${channelId}`);
+        for (const channelId of excludeChannels) {
+          debugLogger(
+            `Inserting excluded channel ${channelId} for soundCron ${serverId}:${soundCron.name}`,
+          );
           await conn.query(insertExcludeChannelsQuery, [insertId, channelId]);
         }
       }
+
       await conn.commit();
-      logHelp("Transaction committed");
     } catch (err) {
       await conn.rollback();
       throw err;
@@ -69,18 +110,11 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
   }
 
   async removeCron(serverId: string, name: string): Promise<void> {
-    const logHelp = (message: string): void => {
-      debugLogger(
-        `MariaDbSoundCronRepo removeCron ${serverId}:${name}: ${message}`,
-      );
-    };
-
     const conn = await this.pool.getConnection();
     try {
-      logHelp("Beginning to remove soundCron");
+      debugLogger(`Removing soundCron ${serverId}:${name}`);
       const query = "DELETE FROM soundCrons WHERE serverId = ? AND name = ?";
       await conn.query(query, [serverId, name]);
-      logHelp("Deleted soundCron");
     } finally {
       await conn.release();
     }
@@ -147,6 +181,8 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
         FROM soundCrons sc
         LEFT JOIN excludedChannels ec ON sc.soundCronId = ec.soundCronId
         GROUP BY sc.soundCronId`;
+
+      type WithServerId<T> = T & { serverId: string };
       const rows =
         await conn.query<Array<WithServerId<GroupedSoundCronRow>>>(query);
       const result: Record<string, SoundCron[]> = {};

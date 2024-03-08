@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint . --config ../.eslintrc.js",
-    "fmt": "prettier --write ."
+    "fmt": "prettier --write ./src"
   },
   "author": "Cal Crosby <calcrosbydev@outlook.com>",
   "description": "The worker component of the bigben Discord bot",

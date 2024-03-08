@@ -20,7 +20,6 @@ type SoundCronQueue = bullmq.Queue<SoundCronJob, SoundCronJobEstablished>;
  */
 export class SoundCronService {
   private readonly soundCronQueue: SoundCronQueue;
-  private readonly soundCronQueueEvents: bullmq.QueueEvents;
 
   constructor(
     private readonly workerMapRepo: WorkerRecordRepo,
@@ -32,7 +31,10 @@ export class SoundCronService {
       connection: redis,
     });
 
-    this.soundCronQueueEvents = new bullmq.QueueEvents("soundCron", {
+    /* We set up an event listener for when a soundcron job is sent. This
+    lets us know that we expect it to be alive, and we start listening for
+    heartbeats. */
+    new bullmq.QueueEvents("soundCron", {
       connection: redis,
     }).on("completed", async (job) => {
       const retrievedJob = await bullmq.Job.fromId<
@@ -53,8 +55,12 @@ export class SoundCronService {
           debugLogger(`Worker ${workerId} is alive`);
           return;
         }
-        this.logger.warn(`Worker ${workerId} has died. Attempting to resurrect jobs`);
+        this.logger.warn(
+          `Worker ${workerId} has died. Attempting to resurrect jobs`,
+        );
         await this.resurrectSoundCronsForWorker(workerId);
+        /* We assume that the resurrection works the first time. If it doesn't,
+        then the user will have to manually restart the soundcron. */
         clearInterval(timeout);
       }, heartbeatInterval);
     });

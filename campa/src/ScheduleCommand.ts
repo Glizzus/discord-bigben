@@ -2,6 +2,9 @@ import * as discord from "discord.js";
 import { type SoundCronService } from "./SoundCronService";
 import { Command } from "./Command";
 
+/**
+ * A command for managing the sound schedule.
+ */
 export class ScheduleCommand implements Command {
   constructor(private readonly soundCronService: SoundCronService) {}
 

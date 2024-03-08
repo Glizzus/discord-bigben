@@ -1,12 +1,10 @@
 import * as discord from "discord.js";
 import * as mariadb from "mariadb";
-import * as bullmq from "bullmq";
 import { MariaDbSoundCronRepo } from "./SoundCronRepo";
 import { SoundCronService } from "./SoundCronService";
 import { debugLogger, logger } from "./logging";
 import { ScheduleCommand } from "./ScheduleCommand";
 import { Command } from "./Command";
-import { type SoundCronJob } from "@discord-bigben/types";
 import { Redis } from "ioredis";
 import { RedisWorkerRecordRepo } from "./WorkerRecordRepo";
 
@@ -57,7 +55,8 @@ const options: discord.ClientOptions = {
 
 async function main(): Promise<void> {
   const redis = new Redis(parseInt(redisPort), redisHost, {
-    maxRetriesPerRequest: null
+    // We need to make this null for some reason or it errors
+    maxRetriesPerRequest: null,
   });
   const workerRepo = new RedisWorkerRecordRepo(redis);
 
