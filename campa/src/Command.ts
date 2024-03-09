@@ -1,7 +1,7 @@
 import {
-  ChatInputCommandInteraction,
-  AutocompleteInteraction,
-  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+  type AutocompleteInteraction,
+  type SlashCommandBuilder,
 } from "discord.js";
 
 /**

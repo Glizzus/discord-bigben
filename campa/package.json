@@ -9,8 +9,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "fmt": "prettier --write .",
-    "lint": "eslint ."
+    "fmt": "prettier --write ./src",
+    "lint": "eslint . --ext .ts"
   },
   "author": "Cal Crosby <calcrosbydev@outlook.com>",
   "description": "",
@@ -27,16 +27,7 @@
   "devDependencies": {
     "@discord-bigben/types": "^0.0.6",
     "@types/debug": "^4.1.12",
-    "@types/eslint": "^8.56.5",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-config-standard-with-typescript": "^43.0.1",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-n": "^16.6.2",
-    "eslint-plugin-prettier": "^5.1.3",
-    "eslint-plugin-promise": "^6.1.1",
     "prettier": "^3.2.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   }
 }

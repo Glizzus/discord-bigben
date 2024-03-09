@@ -1,6 +1,6 @@
 import * as discord from "discord.js";
 import { type SoundCronService } from "./SoundCronService";
-import { Command } from "./Command";
+import { type Command } from "./Command";
 
 /**
  * A command for managing the sound schedule.
@@ -83,17 +83,18 @@ export class ScheduleCommand implements Command {
     const audioUrl = interaction.options.getString("audio_url");
     const audioFile = interaction.options.getAttachment("audio_file");
 
-    if (audioUrl === null && audioFile === null) {
+    const audio = (() => {
+      if (audioUrl !== null && audioFile !== null) {
+        throw new Error(
+          "audio_url and audio_file are mutually exclusive, please provide only one",
+        );
+      }
+      if (audioUrl !== null) return audioUrl;
+      if (audioFile !== null) return audioFile.url;
       throw new Error(
         "audio_url or audio_file is required, please provide one",
       );
-    }
-
-    if (audioUrl !== null && audioFile !== null) {
-      throw new Error(
-        "audio_url and audio_file are mutually exclusive, please provide only one",
-      );
-    }
+    })();
 
     const mute = interaction.options.getBoolean("mute") ?? false;
     const description =
@@ -102,7 +103,7 @@ export class ScheduleCommand implements Command {
     const soundCron = {
       name,
       cron,
-      audio: audioUrl ?? audioFile!.url,
+      audio,
       mute,
       description,
     };

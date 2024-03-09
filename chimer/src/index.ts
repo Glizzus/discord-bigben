@@ -237,7 +237,7 @@ async function main() {
         expireTime,
         JSON.stringify({ workerId }),
       );
-    },  
+    },
     () => {
       logger.error("Heartbeat job completed - this should never happen");
     },

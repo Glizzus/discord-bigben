@@ -4,7 +4,7 @@ import { MariaDbSoundCronRepo } from "./SoundCronRepo";
 import { SoundCronService } from "./SoundCronService";
 import { debugLogger, logger } from "./logging";
 import { ScheduleCommand } from "./ScheduleCommand";
-import { Command } from "./Command";
+import { type Command } from "./Command";
 import { Redis } from "ioredis";
 import { RedisWorkerRecordRepo } from "./WorkerRecordRepo";
 

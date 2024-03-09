@@ -1,12 +1,12 @@
-import { UUID } from "crypto";
-import { Redis } from "ioredis";
+import { type UUID } from "crypto";
+import { type Redis } from "ioredis";
 
 export interface WorkerRecordRepo {
-  addWorkerRecord(workerId: UUID, jobId: string): Promise<void>;
-  addUnassigned(jobId: string): Promise<void>;
+  addWorkerRecord: (workerId: UUID, jobId: string) => Promise<void>;
+  addUnassigned: (jobId: string) => Promise<void>;
 
-  retrieveWorkerRecords(workerId: UUID): Promise<string[]>;
-  retrieveUnassigned(): Promise<string[]>;
+  retrieveWorkerRecords: (workerId: UUID) => Promise<string[]>;
+  retrieveUnassigned: () => Promise<string[]>;
 }
 
 export class RedisWorkerRecordRepo implements WorkerRecordRepo {
@@ -28,11 +28,11 @@ export class RedisWorkerRecordRepo implements WorkerRecordRepo {
     await this.redis.sadd("unassigned", jobId);
   }
 
-  retrieveWorkerRecords(workerId: UUID): Promise<string[]> {
-    return this.redis.smembers(this.keyify(workerId));
+  async retrieveWorkerRecords(workerId: UUID): Promise<string[]> {
+    return await this.redis.smembers(this.keyify(workerId));
   }
 
-  retrieveUnassigned(): Promise<string[]> {
-    return this.redis.smembers("unassigned");
+  async retrieveUnassigned(): Promise<string[]> {
+    return await this.redis.smembers("unassigned");
   }
 }
