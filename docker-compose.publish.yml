@@ -1,0 +1,25 @@
+version: "3.5"
+
+x-common:
+  args: &common_args
+    BUILD_TIME: ${BUILD_TIME}
+    GIT_HASH: ${GIT_HASH}
+
+services:
+  campa:
+    build:
+      context: ./campa
+      args: *common_args
+    image: ghcr.io/glizzus/bigben/campa
+  
+  chimer:
+    build:
+      context: ./chimer
+      args: *common_args
+    image: ghcr.io/glizzus/bigben/chimer
+
+  mariadb:
+    build:
+      context: ./mariadb
+      args: *common_args
+    image: ghcr.io/glizzus/bigben/mariadb

@@ -2,18 +2,18 @@ version: "3.5"
 
 x-common:
   chimer: &chimer
-    image: chimer:latest
+    image: gchr.io/glizzus/bigben/chimer:latest
 
 services:
   campa:
-    image: campa:latest
+    image: gchr.io/glizzus/bigben/campa:latest
   
   redis:
     volumes:
       - /var/lib/redis:/data
   
   mariadb:
-    image: bigben-mariadb:latest
+    image: gchr.io/glizzus/bigben/mariadb:latest
     volumes:
       - /var/lib/mariadb:/var/lib/mysql
 
