@@ -16,10 +16,11 @@
         repo: https://github.com/Glizzus/discord-bigben
         dest: /srv/discord-bigben
         version: main
+        update: true
 
     - name: Login to GitHub Container Registry
       community.general.docker_login:
-        registry_url: ghcr.io
+        registry_url: ghcr.io/glizzus/bigben
         username: "{{ ghcr_username }}"
         password: "{{ ghcr_token }}"
 
