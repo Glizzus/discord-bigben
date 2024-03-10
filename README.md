@@ -2,6 +2,14 @@
 
 A discord bot that plays any noise at a specific cron interval.
 
+## Bot Permissions
+
+| General Permissions | Text Permissions | Voice Permissions |
+| -------------------- | ---------------- | ------------------ |
+|                      | Use Slash Commands | Connect            |
+|                      |                    | Speak              |
+|                      |                    | Mute Members |
+
 ## Terminology
 
 - `SoundCron`: A cron job that plays a sound at a specific time.

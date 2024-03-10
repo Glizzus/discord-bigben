@@ -89,10 +89,14 @@ async function main(): Promise<void> {
     schedule: scheduleCommand,
   };
 
-  const rest = new discord.REST().setToken(discordToken);
-  await rest.put(discord.Routes.applicationCommands(clientId), {
-    body: Object.values(commandMap).map((c) => c.data),
-  });
+  try {
+    const rest = new discord.REST().setToken(discordToken);
+    await rest.put(discord.Routes.applicationCommands(clientId), {
+      body: Object.values(commandMap).map((c) => c.data),
+    });
+  } catch (err) {
+    logger.error(`Failed to register commands: ${err}`);
+  }
 
   discordClient.on(discord.Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
