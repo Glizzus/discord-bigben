@@ -29,6 +29,7 @@
       community.docker.docker_compose:
         restarted: true
         project_src: /srv/discord-bigben-test
+        pull: true
         files:
           - docker-compose.yml
           - docker-compose.test.override.yml

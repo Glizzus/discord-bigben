@@ -1,5 +1,5 @@
 - name: Provision
-  hosts: controller
+  hosts: prod
   become: true
   vars_files:
     - vars.yml
@@ -28,6 +28,7 @@
       community.docker.docker_compose:
         restarted: true
         project_src: /srv/discord-bigben
+        pull: true
         files:
           - docker-compose.yml
           - docker-compose.prod.override.yml

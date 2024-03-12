@@ -56,7 +56,11 @@ export class SoundCronService {
           return;
         }
         this.logger.warn(
-          `Worker ${workerId} has died. Attempting to resurrect jobs`,
+          `Worker ${workerId} has died. Attempting to resurrect soundcrons.`,
+        );
+        await redis.sadd("deadWorkers", workerId);
+        this.logger.warn(
+          `Worker ${workerId} has been marked as dead to prevent a zombie.`
         );
         await this.resurrectSoundCronsForWorker(workerId);
         /* We assume that the resurrection works the first time. If it doesn't,
@@ -195,43 +199,18 @@ export class SoundCronService {
    * @throws SoundCronServiceError if there is an error removing the soundcron from the database or queue
    */
   async removeCron(serverId: string, name: string): Promise<void> {
-    const baseErrorMessage = `Unable to remove soundcron ${name} for server ${serverId}`;
-
-    /* 1. Get full soundcron from the database (necessary to remove from queue)
-    See https://api.docs.bullmq.io/classes/v5.Queue.html#removeRepeatable for more
-    information on why we need the full soundcron */
-    let soundCron: SoundCron | undefined;
-    try {
-      soundCron = await this.soundCronRepo.getCron(serverId, name);
-    } catch (err) {
-      if (err instanceof Error) {
-        throw new SoundCronServiceError(
-          `${baseErrorMessage}: Unable to get soundcron from database`,
-          err,
-        );
-      }
-    }
-    // I currently have no idea if this can happen
-    if (soundCron === undefined) {
-      throw new SoundCronServiceError(
-        `${baseErrorMessage}: Soundcron not found in database`,
-      );
-    }
-
-    // 2. Remove the cron from the database
     try {
       await this.soundCronRepo.removeCron(serverId, name);
     } catch (err) {
       if (err instanceof Error) {
         throw new SoundCronServiceError(
-          `${baseErrorMessage}: Unable to remove from database`,
+          `Unable to remove from database`,
           err,
         );
       }
     }
 
-    // 3. Add deletion key to Redis
-    const key = `${serverId}:${soundCron.name}`;
+    const key = `${serverId}:${name}`;
     await this.redis.sadd("removedSoundCrons", key);
   }
 

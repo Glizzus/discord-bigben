@@ -95,6 +95,13 @@ function processorFactory(
             return;
           }
 
+          if (await redis.sismember("deadWorkers", workerId)) {
+            logger.info(`This worker ${workerId} has been marked as dead - worker is killing itself`);
+            /* Screw recovery; if the orchestrator believes we're dead, we're dead.
+            pm2, systemd, Docker, or whatever will restart us. */
+            process.exit(0);
+          }
+
           const { audio, mute } = job.data;
           debugLogger(`Playing audio ${audio} in server ${serverId}`);
           const guild = await discordClient.guilds.fetch(serverId);
