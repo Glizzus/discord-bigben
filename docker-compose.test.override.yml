@@ -3,10 +3,14 @@ version: "3.5"
 x-common:
   chimer: &chimer
     image: ghcr.io/glizzus/bigben/chimer:latest
+    environment:
+      DEBUG: chimer*
 
 services:
   campa:
     image: ghcr.io/glizzus/bigben/campa:latest
+    environment:
+      DEBUG: campa*
   
   redis:
     volumes:

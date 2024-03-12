@@ -8,14 +8,14 @@
     - role: geerlingguy.pip
       vars:
         pip_install_packages:
-          - name: docker
-          - name: docker-compose
+          - "docker==6.1.3"
+          - "docker-compose"
 
   tasks:
     - name: Clone the repository
       ansible.builtin.git:
         repo: https://github.com/Glizzus/discord-bigben
-        dest: /srv/discord-bigben
+        dest: /srv/discord-bigben-test
         version: main
         update: true
 
@@ -28,7 +28,7 @@
     - name: Up with Docker Compose
       community.docker.docker_compose:
         restarted: true
-        project_src: /srv/discord-bigben
+        project_src: /srv/discord-bigben-test
         files:
           - docker-compose.yml
           - docker-compose.test.override.yml
