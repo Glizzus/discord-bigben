@@ -28,9 +28,6 @@ services:
   chimer2:
     <<: *chimer
   
-  chimer3:
-    <<: *chimer
-
   redis:
     image: redis
 

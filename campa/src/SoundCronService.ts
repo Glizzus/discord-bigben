@@ -230,20 +230,9 @@ export class SoundCronService {
       }
     }
 
-    // 3. Remove the cron from the queue
+    // 3. Add deletion key to Redis
     const key = `${serverId}:${soundCron.name}`;
-    try {
-      await this.soundCronQueue.removeRepeatable(key, {
-        pattern: soundCron.cron,
-      });
-    } catch (err) {
-      if (err instanceof Error) {
-        throw new SoundCronServiceError(
-          `${baseErrorMessage}: Unable to remove from queue`,
-          err,
-        );
-      }
-    }
+    await this.redis.sadd("removedSoundCrons", key);
   }
 
   async listCrons(serverId: string): Promise<SoundCron[]> {

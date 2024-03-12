@@ -40,9 +40,6 @@ services:
   chimer2:
     <<: *chimer
   
-  chimer3:
-    <<: *chimer
-
 volumes:
   bigben-mariadb:
   bigben-redis:

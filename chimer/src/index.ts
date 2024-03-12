@@ -80,6 +80,7 @@ function processorFactory(
       logger.error(`Soundcron ${key} is already taken by this worker.`);
     } else {
       takenKeys.add(key);
+      logger.info(`Worker ${workerId} is taking soundcron ${key}`)
 
       new CronJob(
         cron,
@@ -88,7 +89,7 @@ function processorFactory(
           it in the removedSoundCrons set. If we find it there, we will
           stop the job and remove it from the set. */
           if (await redis.sismember("removedSoundCrons", key)) {
-            logger.info(`Soundcron ${key} is a removed job - stopping`);
+            logger.info(`Soundcron ${key} has been marked as removed - stopping`);
             this.stop();
             await redis.srem("removedSoundCrons", key);
             return;
@@ -113,8 +114,8 @@ function processorFactory(
             adapterCreator: maxChannel.guild.voiceAdapterCreator,
           });
 
-          // We need to ensure that the users get unmuted no matter what
           try {
+            // We need to ensure that the users get unmuted no matter what
             if (mute) {
               await muteMembers(maxChannel);
             }

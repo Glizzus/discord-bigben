@@ -3,23 +3,19 @@ version: "3.5"
 x-common:
   chimer: &chimer
     image: ghcr.io/glizzus/bigben/chimer:latest
-    restart: always
 
 services:
   campa:
     image: ghcr.io/glizzus/bigben/campa:latest
-    restart: always
   
   redis:
     volumes:
-      - /var/lib/redis:/data
-    restart: always
+      - /var/lib/redis-test:/data
   
   mariadb:
     image: ghcr.io/glizzus/bigben/mariadb:latest
     volumes:
-      - /var/lib/mariadb:/var/lib/mysql
-    restart: always
+      - /var/lib/mariadb-test:/var/lib/mysql
 
   chimer1:
     <<: *chimer
@@ -27,3 +23,6 @@ services:
   chimer2:
     <<: *chimer
   
+volumes:
+  redis:
+  mariadb:
