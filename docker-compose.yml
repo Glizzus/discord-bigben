@@ -24,10 +24,10 @@ services:
 
   chimer1:
     <<: *chimer
-  
+
   chimer2:
     <<: *chimer
-  
+ 
   redis:
     image: redis
 

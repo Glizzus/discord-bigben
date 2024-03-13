@@ -11,11 +11,11 @@ services:
     image: ghcr.io/glizzus/bigben/campa:latest
     environment:
       DEBUG: campa*
-  
+
   redis:
     volumes:
       - /var/lib/redis-test:/data
-  
+
   mariadb:
     image: ghcr.io/glizzus/bigben/mariadb:latest
     volumes:
@@ -23,10 +23,10 @@ services:
 
   chimer1:
     <<: *chimer
-  
+
   chimer2:
     <<: *chimer
-  
+
 volumes:
   redis:
   mariadb:

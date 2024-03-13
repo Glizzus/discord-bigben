@@ -11,7 +11,7 @@ services:
       context: ./campa
       args: *common_args
     image: ghcr.io/glizzus/bigben/campa
-  
+
   chimer:
     build:
       context: ./chimer

@@ -9,12 +9,12 @@ services:
   campa:
     image: ghcr.io/glizzus/bigben/campa:latest
     restart: always
-  
+
   redis:
     volumes:
       - /var/lib/redis:/data
     restart: always
-  
+
   mariadb:
     image: ghcr.io/glizzus/bigben/mariadb:latest
     volumes:
@@ -23,7 +23,7 @@ services:
 
   chimer1:
     <<: *chimer
-  
+
   chimer2:
     <<: *chimer
-  
+ 

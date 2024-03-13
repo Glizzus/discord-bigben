@@ -15,13 +15,13 @@ services:
     depends_on:
       - redis
       - mariadb
-  
+
   redis:
     ports:
       - 6379:6379
     volumes:
       - bigben-redis:/data
-  
+
   mariadb:
     build: ./mariadb
     ports:
@@ -36,10 +36,10 @@ services:
 
   chimer1:
     <<: *chimer
-  
+
   chimer2:
     <<: *chimer
-  
+
 volumes:
   bigben-mariadb:
   bigben-redis:
