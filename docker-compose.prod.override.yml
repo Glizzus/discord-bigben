@@ -2,12 +2,12 @@ version: "3.5"
 
 x-common:
   chimer: &chimer
-    image: ghcr.io/glizzus/bigben/chimer:latest
+    image: ghcr.io/glizzus/bigben/chimer:${CHIMER_VERSION}
     restart: always
 
 services:
   campa:
-    image: ghcr.io/glizzus/bigben/campa:latest
+    image: ghcr.io/glizzus/bigben/campa:${CAMPA_VERSION}
     restart: always
 
   redis:

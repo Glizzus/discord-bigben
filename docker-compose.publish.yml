@@ -10,13 +10,13 @@ services:
     build:
       context: ./campa
       args: *common_args
-    image: ghcr.io/glizzus/bigben/campa
+    image: ghcr.io/glizzus/bigben/campa:${CAMPA_VERSION}
 
   chimer:
     build:
       context: ./chimer
       args: *common_args
-    image: ghcr.io/glizzus/bigben/chimer
+    image: ghcr.io/glizzus/bigben/chimer:${CHIMER_VERSION}
 
   mariadb:
     build:

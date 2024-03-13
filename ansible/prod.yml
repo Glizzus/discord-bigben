@@ -11,18 +11,29 @@
         pip_install_packages:
           - name: docker
   tasks:
-    - name: Clone the repository
-      ansible.builtin.git:
-        repo: https://github.com/Glizzus/discord-bigben
+    - name: Copy docker compose files
+      ansible.builtin.copy:
+        src: "../{{ item }}"
         dest: /srv/discord-bigben
-        version: main
-        update: true
+      with_items:
+        - docker-compose.yml
+        - docker-compose.prod.override.yml
 
     - name: Login to GitHub Container Registry
       community.general.docker_login:
         registry_url: https://ghcr.io/glizzus/bigben
         username: "{{ ghcr_username }}"
         password: "{{ ghcr_token }}"
+    
+    - name: Fail if the campa_version latest
+      ansible.builtin.fail:
+        msg: "campa_version is set to default latest - this is not good for production"
+      when: campa_version == "latest"
+
+    - name: Fail if the chimer_version latest
+      ansible.builtin.fail:
+        msg: "chimer_version is set to default latest - this is not good for production"
+      when: chimer_version == "latest"    
 
     - name: Up with Docker Compose
       community.docker.docker_compose:
@@ -43,3 +54,6 @@
         MARIADB_URI: "{{ mariadb_uri }}"
 
         REDIS_HOST: "{{ redis_host }}"
+
+        CHIMER_VERSION: "{{ chimer_version }}"
+        CAMPA_VERSION: "{{ campa_version }}"

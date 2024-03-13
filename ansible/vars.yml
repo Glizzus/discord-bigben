@@ -1,2 +1,5 @@
 mariadb_uri: "mariadb://{{ mariadb_user }}:{{ mariadb_password }}@mariadb:3306/{{ mariadb_database }}"
 redis_host: "redis"
+
+chimer_version: latest
+campa_version: latest

@@ -12,12 +12,13 @@
           - "docker-compose"
 
   tasks:
-    - name: Clone the repository
-      ansible.builtin.git:
-        repo: https://github.com/Glizzus/discord-bigben
-        dest: /srv/discord-bigben-test
-        version: main
-        update: true
+    - name: Copy docker compose files
+      ansible.builtin.copy:
+        src: "../{{ item }}"
+        dest: /srv/discord-bigben
+      with_items:
+        - docker-compose.yml
+        - docker-compose.test.override.yml
 
     - name: Login to GitHub Container Registry
       community.general.docker_login:
