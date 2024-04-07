@@ -4,26 +4,49 @@ x-common:
   chimer: &chimer
     build: ./chimer
     environment:
+      REDIS_HOST: redis
       DEBUG: chimer:*
 
 services:
   campa:
     build: ./campa
     environment:
+      REDIS_HOST: redis
       MARIADB_URI: mariadb://dev:dev@mariadb/bigben-dev
-      DEBUG: campa
+      DEBUG: campa:*
     depends_on:
       - redis
       - mariadb
+      - flyway
+
+  chimer1:
+    <<: *chimer
+
+  chimer2:
+    <<: *chimer
+
+  chimer3:
+    <<: *chimer
+
+  flyway:  
+    build: ./flyway
+    environment:
+      FLYWAY_URL: jdbc:mariadb://mariadb:3306/bigben-dev
+      FLYWAY_USER: dev
+      FLYWAY_PASSWORD: dev
+      FLYWAY_SCHEMAS: bigben-dev
+    depends_on:
+      - mariadb
 
   redis:
+    image: redis:7.2-alpine3.19
     ports:
       - 6379:6379
     volumes:
       - bigben-redis:/data
 
   mariadb:
-    build: ./mariadb
+    image: mariadb:11.3.2
     ports:
       - 3306:3306
     environment:
@@ -33,12 +56,6 @@ services:
       MARIADB_ROOT_PASSWORD: root
     volumes:
       - bigben-mariadb:/var/lib/mysql
-
-  chimer1:
-    <<: *chimer
-
-  chimer2:
-    <<: *chimer
 
 volumes:
   bigben-mariadb:

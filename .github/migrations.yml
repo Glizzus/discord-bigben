@@ -1,0 +1,24 @@
+name: Migrations Workflow
+
+on:
+  push:
+    paths:
+      - 'migrations/**'
+  pull_request:
+    paths:
+      - 'migrations/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Lint Migrations with sqlfluff
+        run: ci/flyway/sqlfluff/lint.sh
+
+      - name: Upload sqlfluff results
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqlfluff-results
+          path: output/sqlfluff-results.json
