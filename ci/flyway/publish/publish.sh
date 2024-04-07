@@ -2,7 +2,7 @@
 set -e
 cd "$(dirname "$0")"
 
-date="$(TZ=UTC date --iso-8601=seconds)"
+date="$(date -u "+%Y-%m-%dT%H-%M-%SZ")"
 export DATE="$date"
 
 git_hash="$(git rev-parse HEAD)"
