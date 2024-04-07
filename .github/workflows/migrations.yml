@@ -21,4 +21,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sqlfluff-results
-          path: output/sqlfluff-results.json
+          path: migrations/flyway/sql/sqlfluff-results.json
