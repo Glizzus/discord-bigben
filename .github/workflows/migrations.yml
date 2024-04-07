@@ -29,6 +29,7 @@ jobs:
         # The image name is sent to the output
         run: |
           image=$(ci/flyway/build/build.sh)
+          echo "Built Flyway image: $image"
           echo "image=${image}" >> $GITHUB_ENV
 
       - name: Test Flyway Image
