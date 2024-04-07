@@ -4,9 +4,10 @@ services:
   flyway:
     image: ${FLYWAY_IMAGE}
     environment:
-      FLYWAY_URL: jdbc:mysql://mariadb:3306/flyway_test
+      FLYWAY_URL: jdbc:mariadb://mariadb:3306/flyway_test
       FLYWAY_USER: flyway
       FLYWAY_PASSWORD: flyway
+      FLYWAY_CONNECT_RETRIES: 20
     depends_on:
       - mariadb
 
