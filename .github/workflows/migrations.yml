@@ -43,4 +43,5 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push Flyway Image
-        run: ci/flyway/publish/publish.sh
+        run: ci/flyway/push.sh ${{ steps.build-flyway-image.outputs.image_name }}
+
