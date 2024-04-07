@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+cd "$(dirname "$0")"
+
 if [ -z "$1" ]; then
     echo "Usage: $0 <flyway_docker_image>"
     exit 1
