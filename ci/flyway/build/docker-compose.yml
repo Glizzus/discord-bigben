@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   flyway:
-    image: ghcr.io/glizzus/bigben/flyway:${DATE}
+    image: ghcr.io/glizzus/bigben/flyway:build-${DATE}
     build:
       context: ../../../migrations
       args:
