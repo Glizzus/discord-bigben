@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Lint Migrations with sqlfluff
         run: ci/flyway/sqlfluff/lint.sh
@@ -21,4 +21,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sqlfluff-results
-          path: migrations/flyway/sql/sqlfluff-results.json
+          path: ci/flyway/sqlfluff/results.json

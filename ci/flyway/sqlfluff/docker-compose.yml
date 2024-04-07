@@ -5,6 +5,7 @@ version: '3.8'
 services:
   sqlfluff:
     image: sqlfluff/sqlfluff:3.0.3
+    working_dir: /output
     command:
       - lint
       - /sql
@@ -13,9 +14,9 @@ services:
       - --dialect
       - mysql
       - --write-output
-      - sqlfluff-results.json
+      - results.json
       - --disable-progress-bar
       - --nocolor
     volumes:
-      - ../../../migrations/flyway/sql:/sql
-
+      - ../../../migrations/flyway/sql:/sql:ro
+      - ./output:/output
