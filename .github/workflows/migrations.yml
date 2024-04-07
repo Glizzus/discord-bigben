@@ -25,20 +25,15 @@ jobs:
           path: ci/flyway/sqlfluff/output/results.json
 
       - name: Build Flyway Image
-        id: build_flyway_image
+        id: build-flyway-image
         # The image name is sent to the output
         run: |
           image=$(ci/flyway/build/build.sh)
           echo "Built Flyway image: $image"
-          echo "image=${image}" >> $GITHUB_ENV
+          echo image_name=$image >> $GITHUB_OUTPUT
 
       - name: Test Flyway Image
-        run: |
-          echo "Testing Flyway image: ${{ steps.build_flyway_image.outputs.image }}"
-          echo "Env:" $FLYWAY_IMAGE
-          ci/flyway/test/test.sh
-        env:
-          FLYWAY_IMAGE: ${{ steps.build_flyway_image.outputs.image }}
+        run: ci/flyway/test/test.sh ${{ steps.build-flyway-image.outputs.image_name }}
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
