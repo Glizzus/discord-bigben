@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
 
-file="ci/flyway/sqlfluff/docker-compose.yml"
-docker compose --file "$file" up --no-color --quiet-pull
+cd "$(dirname "$0")"
+export USER="$(id -u):$(id -g)"
+docker compose up --no-color --quiet-pull
