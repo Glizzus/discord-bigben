@@ -3,41 +3,29 @@ version: "3.5"
 x-common:
   chimer: &chimer
     environment:
-      REDIS_HOST: redis
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DEBUG: ${DEBUG}
-  depends_on:
-    - redis
 
 services:
   campa:
-    build: ./campa
     environment:
-      REDIS_HOST: redis
-      MARIADB_URI: mariadb://${MARIADB_USER}:${MARIADB_PASSWORD}@mariadb:3306/${MARIADB_DATABASE}
+      REDIS_HOST: ${REDIS_HOST}
+      MARIADB_URI: ${MARIADB_URI}
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       CLIENT_ID: ${CLIENT_ID}
-      DEBUG: campa:*
-    depends_on:
-      - redis
-      - mariadb
+      DEBUG: ${DEBUG}
 
   chimer1:
     <<: *chimer
 
   chimer2:
     <<: *chimer
- 
-  redis:
-    image: redis
 
-  mariadb:
+  chimer3:
+    <<: *chimer
+
+  flyway:
     environment:
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-
-volumes:
-  bigben-mariadb:
-  bigben-redis:
+      FLYWAY_URL: ${FLYWAY_URL}
+      FLYWAY_USER: ${FLYWAY_USER}
+      FLYWAY_PASSWORD: ${FLYWAY_PASSWORD}

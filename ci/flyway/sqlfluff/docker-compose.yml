@@ -1,0 +1,22 @@
+# A docker-compose.yml file that lints the SQL migrations using sqlfluff.
+# This is intended to be run from the root of the project.
+version: '3.8'
+
+services:
+  sqlfluff:
+    image: sqlfluff/sqlfluff:3.0.3
+    working_dir: /output
+    command:
+      - lint
+      - /sql
+      - --format
+      - json
+      - --dialect
+      - mysql
+      - --write-output
+      - /output/sqlfluff-results.json
+      - --disable-progress-bar
+      - --nocolor
+    volumes:
+      - ../../../migrations/flyway/sql:/sql
+      - ../../../output:/output

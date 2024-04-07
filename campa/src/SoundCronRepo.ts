@@ -67,13 +67,13 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
 
       // 1. Create the server in the servers table if it doesn't exist
       const insertServerQuery =
-        "INSERT IGNORE INTO servers (serverId) VALUES (?)";
+        "INSERT IGNORE INTO servers (server_id) VALUES (?)";
       debugLogger(`Inserting server ${serverId} if it doesn't exist`);
       await conn.query(insertServerQuery, [serverId]);
 
       // 2. Insert the soundCron itself
       const insertSoundCronQuery =
-        "INSERT INTO soundCrons (serverId, name, cron, audio, mute, description) VALUES (?, ?, ?, ?, ?, ?)";
+        "INSERT INTO soundcrons (server_id, soundcron_name, cron, audio, mute, soundcron_description) VALUES (?, ?, ?, ?, ?, ?)";
       const { name, cron, audio, mute, description } = soundCron;
       const params = [serverId, name, cron, audio, mute ?? false, description];
       debugLogger(
@@ -88,7 +88,7 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
       const { excludeChannels } = soundCron;
       if (excludeChannels !== undefined) {
         const insertExcludeChannelsQuery =
-          "INSERT INTO excludedChannels (soundCronId, channelId) VALUES (?, ?)";
+          "INSERT INTO excluded_channels (soundcron_id, channel_id) VALUES (?, ?)";
         debugLogger(
           `Inserting ${excludeChannels.length} excluded channels for soundCron ${serverId}:${soundCron.name}`,
         );
@@ -113,7 +113,7 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     const conn = await this.pool.getConnection();
     try {
       debugLogger(`Removing soundCron ${serverId}:${name}`);
-      const query = "DELETE FROM soundCrons WHERE serverId = ? AND name = ?";
+      const query = "DELETE FROM soundcrons WHERE server_id = ? AND soundcron_name = ?";
       await conn.query(query, [serverId, name]);
     } finally {
       await conn.release();
@@ -129,12 +129,12 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
         excludeChannels: string;
       };
       const query = `
-        SELECT sc.name, sc.cron, sc.audio, sc.mute, sc.description,
-        GROUP_CONCAT(ec.channelId) AS excludeChannels
-        FROM soundCrons sc
-        LEFT JOIN excludedChannels ec ON sc.soundCronId = ec.soundCronId
-        WHERE sc.serverId = ?
-        GROUP BY sc.soundCronId`;
+        SELECT sc.soundcron_name, sc.cron, sc.audio, sc.mute, sc.soundcron_description,
+        GROUP_CONCAT(ec.channel_id) AS excluded_channels
+        FROM soundcrons sc
+        LEFT JOIN excluded_channels ec ON sc.soundcron_id = ec.soundcron_id
+        WHERE sc.server_id = ?
+        GROUP BY sc.soundcron_id`;
       const rows = await conn.query<GroupedSoundCronRow[]>(query, [serverId]);
       return rows.map((row) => {
         return {
@@ -153,7 +153,7 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     const conn = await this.pool.getConnection();
     try {
       const query =
-        "SELECT name, cron, audio, mute, description FROM soundCrons WHERE serverId = ? AND name = ?";
+        "SELECT soundcron_name, cron, audio, mute, soundcron_description FROM soundcrons WHERE server_id = ? AND soundcron_name = ?";
       const rows = await conn.query<GroupedSoundCronRow[]>(query, [
         serverId,
         name,
@@ -176,11 +176,11 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     const conn = await this.pool.getConnection();
     try {
       const query = `
-        SELECT serverId, name, cron, audio, mute, description,
-        GROUP_CONCAT(ec.channelId) AS excludeChannels
-        FROM soundCrons sc
-        LEFT JOIN excludedChannels ec ON sc.soundCronId = ec.soundCronId
-        GROUP BY sc.soundCronId`;
+        SELECT server_id, soundcron_name, cron, audio, mute, soundcron_description,
+        GROUP_CONCAT(ec.channel_id) AS excluded_channels 
+        FROM soundcrons sc
+        LEFT JOIN excluded_channels ec ON sc.soundcron_id = ec.soundcron_id
+        GROUP BY sc.soundcron_id`;
 
       type WithServerId<T> = T & { serverId: string };
       const rows =
