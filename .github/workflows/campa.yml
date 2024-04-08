@@ -1,7 +1,7 @@
 name: Campa migrations
 
 on:
-  push: &paths
+  push:
     paths:
       - campa/**
       - '!campa/README.md'
@@ -10,7 +10,15 @@ on:
       - types/**
       - '!types/README.md'
       - '!types/LICENSE'
-  pull_request: &paths
+  pull_request:
+    paths:
+      - campa/**
+      - '!campa/README.md'
+      - '!campa/LICENSE'
+
+      - types/**
+      - '!types/README.md'
+      - '!types/LICENSE'
   workflow_dispatch:
 
 jobs:
