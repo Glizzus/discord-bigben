@@ -70,11 +70,6 @@ async function main(): Promise<void> {
     logger,
   );
 
-  /* Kick off all of the soundcrons in the database.
-  We don't need to await this immediately */
-  const allCronsStarted = soundCronService.startAllCrons();
-  const cronsStartedTime = Date.now();
-
   const discordClient = new discord.Client(options);
   const discordToken =
     process.env.DISCORD_TOKEN ??
@@ -119,10 +114,15 @@ async function main(): Promise<void> {
     }
   });
 
-  // This should eventually finish
-  await allCronsStarted;
-  const cronsStartedDuration = Date.now() - cronsStartedTime;
-  logger.info(`All crons started in ${cronsStartedDuration}ms`);
+  const retries = 5;
+  for (let i = 0; i < retries; i++) {
+    try {
+      await soundCronService.startAllCrons();
+    } catch (err) {
+      logger.error(`Failed to start all crons: ${err}`);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+  }
 }
 
 main().catch((err) => {

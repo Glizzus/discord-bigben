@@ -6,6 +6,8 @@ x-common:
     environment:
       REDIS_HOST: redis
       DEBUG: chimer:*
+    depends_on:
+      - redis
 
 services:
   campa:
@@ -29,12 +31,13 @@ services:
     <<: *chimer
 
   flyway:  
-    build: ./flyway
+    build: ./migrations
     environment:
       FLYWAY_URL: jdbc:mariadb://mariadb:3306/bigben-dev
       FLYWAY_USER: dev
       FLYWAY_PASSWORD: dev
       FLYWAY_SCHEMAS: bigben-dev
+      FLYWAY_CONNECT_RETRIES: 20
     depends_on:
       - mariadb
 

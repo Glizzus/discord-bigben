@@ -255,6 +255,10 @@ async function main() {
   new CronJob(
     "*/5 * * * * *",
     async () => {
+      // If we have no keys, we don't need to send a heartbeat
+      if (takenKeys.size === 0) {
+        return
+      }
       heartbeatDebugLogger(`Sending heartbeat for worker ${workerId}`);
       await redisWorkerMediator.heartbeat();
     },
