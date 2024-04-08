@@ -1,0 +1,47 @@
+name: Chimer migrations
+
+on:
+  push:
+    paths:
+      - chimer/**
+      - '!chimer/README.md'
+      - '!chimer/LICENSE'
+
+      - types/**
+      - '!types/README.md'
+      - '!types/LICENSE'
+  pull_request:
+    paths:
+      - chimer/**
+      - '!chimer/README.md'
+      - '!chimer/LICENSE'
+
+      - types/**
+      - '!types/README.md'
+      - '!types/LICENSE'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build chimer
+        id: build-chimer-image
+        run: |
+          image=$(ci/chimer/build/build.sh)
+          echo "Built chimer image: $image"
+          echo "image_name=$image" >> $GITHUB_OUTPUT
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Chimer Image
+        run: |
+          release_image=$(ci/chimer/push.sh ${{ steps.build-chimer-image.outputs.image_name }})
+          echo "Pushed Chimer image: $release_image"
