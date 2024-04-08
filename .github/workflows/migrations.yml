@@ -3,10 +3,10 @@ name: Migrations Workflow
 on:
   push:
     paths:
-      - 'migrations/**/*.sql'
+      - migrations/**/*.sql
   pull_request:
     paths:
-      - 'migrations/**/*.sql'
+      - migrations/**/*.sql
   workflow_dispatch:
 
 jobs:
@@ -43,5 +43,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push Flyway Image
-        run: ci/flyway/push.sh ${{ steps.build-flyway-image.outputs.image_name }}
-
+        run: |
+          release_image=$(ci/flyway/push.sh ${{ steps.build-flyway-image.outputs.image_name }})
+          echo "Pushed Flyway image: $release_image"
+ 

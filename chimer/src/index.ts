@@ -8,20 +8,7 @@ import { type SoundCronJob } from "@discord-bigben/types";
 import { Redis } from "ioredis";
 import { CronJob } from "cron";
 import { UUID, randomUUID } from "crypto";
-
-const options: discord.ClientOptions = {
-  intents: [
-    discord.GatewayIntentBits.Guilds,
-    discord.GatewayIntentBits.GuildMembers,
-    discord.GatewayIntentBits.GuildVoiceStates,
-  ],
-};
-
-const discordToken =
-  process.env.DISCORD_TOKEN ??
-  (() => {
-    throw new Error("DISCORD_TOKEN is required");
-  })();
+import { RedisWorkerMediator } from "./RedisWorkerMediator";
 
 const audioPlayer = discordVoice.createAudioPlayer({
   behaviors: {
@@ -199,15 +186,31 @@ function setupWorker(
     });
 }
 
-async function main() {
-  logger.info("Starting application");
+async function createDiscordClient() {
 
-  const discordClient = new discord.Client(options);
-  discordClient.on(discord.Events.ClientReady, () => {
-    logger.info(`Logged in as ${discordClient.user?.tag}`);
+  const options: discord.ClientOptions = {
+    intents: [
+      discord.GatewayIntentBits.Guilds,
+      discord.GatewayIntentBits.GuildMembers,
+      discord.GatewayIntentBits.GuildVoiceStates,
+    ],
+  };
+
+  const discordToken =
+    process.env.DISCORD_TOKEN ??
+    (() => {
+      throw new Error("DISCORD_TOKEN is required");
+    })();
+
+  const client = new discord.Client(options);
+  client.on(discord.Events.ClientReady, () => {
+    logger.info(`Logged in as ${client.user?.tag}`);
   });
-  await discordClient.login(discordToken);
+  return client.login(discordToken)
+    .then(() => client)
+}
 
+async function createRedisClient() {
   const redisHost =
     process.env.REDIS_HOST ??
     (() => {
@@ -226,11 +229,25 @@ async function main() {
     // I had to set this to null because it errors if I don't
     maxRetriesPerRequest: null,
   });
-  await redisConn.ping();
-  debugLogger(`Successfully pinged redis at ${redisHost}:${redisPort}`);
+  return redisConn.ping()
+    .then(() => {
+      debugLogger(`Successfully pinged redis at ${redisHost}:${redisPort}`);
+      return redisConn;
+    });
+}
+
+async function main() {
+  logger.info("Starting application");
+
+  const [discordClient, redisConn] = await Promise.all([
+    createDiscordClient(),
+    createRedisClient(),
+  ]);
 
   const workerId = randomUUID();
   setupWorker(workerId, redisConn, discordClient, logger);
+
+  const redisWorkerMediator = new RedisWorkerMediator(workerId, redisConn);
 
   // We make a seperate logger for the heartbeat because it's noisy
   const heartbeatDebugLogger = debugLogger.extend("heartbeat");
@@ -239,12 +256,7 @@ async function main() {
     "*/5 * * * * *",
     async () => {
       heartbeatDebugLogger(`Sending heartbeat for worker ${workerId}`);
-      const expireTime = 10; // seconds
-      await redisConn.setex(
-        `heartbeat:${workerId}`,
-        expireTime,
-        JSON.stringify({ workerId }),
-      );
+      await redisWorkerMediator.heartbeat();
     },
     () => {
       logger.error("Heartbeat job completed - this should never happen");

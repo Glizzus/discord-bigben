@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  campa:
+    image: ghcr.io/glizzus/bigben/campa:build-${DATE}
+    build:
+      context: ../../../campa
+      args:
+        BUILD_TIME: ${DATE}
+        GIT_HASH: ${GIT_HASH}

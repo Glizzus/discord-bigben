@@ -2,12 +2,12 @@
 set -e
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 <flyway_docker_image>"
+    echo "Usage: $0 <campa_docker_image>"
     exit 1
 fi
 
 date="$(date -u "+%Y-%m-%dT%H-%M-%SZ")"
-release_image="ghcr.io/glizzus/bigben/flyway:${date}"
+release_image="ghcr.io/glizzus/bigben/campa:${date}"
 docker tag "$1" "$release_image"
 docker push "$release_image" --quiet
 echo "$release_image"
