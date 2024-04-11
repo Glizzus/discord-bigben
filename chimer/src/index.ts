@@ -89,6 +89,12 @@ function processorFactory(
             process.exit(0);
           }
 
+          const masterHeartbeat = await redis.exists("heartbeat:master");
+          if (masterHeartbeat === 0) {
+            logger.info("Master heartbeat is missing - worker is killing itself");
+            process.exit(0);
+          }
+
           const { audio, mute } = job.data;
           debugLogger(`Playing audio ${audio} in server ${serverId}`);
           const guild = await discordClient.guilds.fetch(serverId);

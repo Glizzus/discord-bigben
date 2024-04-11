@@ -2,9 +2,26 @@ import type mariadb from "mariadb";
 import { type SoundCron } from ".";
 import { debugLogger } from "./logging";
 
-type GroupedSoundCronRow = Omit<SoundCron, "excludeChannels"> & {
-  excludeChannels: string;
-};
+type GroupedSoundCronRow = {
+  soundcron_name: string;
+  cron: string;
+  audio: string;
+  mute: boolean;
+  soundcron_description: string;
+  // This will be null if there are no excluded channels
+  exclude_channels?: string;
+}
+
+function groupedRowToSoundCron(row: GroupedSoundCronRow): SoundCron {
+  return {
+    name: row.soundcron_name,
+    cron: row.cron,
+    audio: row.audio,
+    mute: row.mute,
+    description: row.soundcron_description,
+    excludeChannels: row.exclude_channels?.split(",").filter(Boolean) ?? []
+  };
+}
 
 /**
  * A repository for soundcrons.
@@ -123,27 +140,15 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
   async listCrons(serverId: string): Promise<SoundCron[]> {
     const conn = await this.pool.getConnection();
     try {
-      /* This query uses GROUP_CONCAT to concatenate all the
-      excluded channels into a single, comma-separated string. */
-      type GroupedSoundCronRow = Omit<SoundCron, "excludeChannels"> & {
-        excludeChannels: string;
-      };
       const query = `
         SELECT sc.soundcron_name, sc.cron, sc.audio, sc.mute, sc.soundcron_description,
-        GROUP_CONCAT(ec.channel_id) AS excluded_channels
+        GROUP_CONCAT(ec.channel_id) AS exclude_channels
         FROM soundcrons sc
         LEFT JOIN excluded_channels ec ON sc.soundcron_id = ec.soundcron_id
         WHERE sc.server_id = ?
         GROUP BY sc.soundcron_id`;
       const rows = await conn.query<GroupedSoundCronRow[]>(query, [serverId]);
-      return rows.map((row) => {
-        return {
-          ...row,
-          // Split the excludeChannels string into an array, remove any empty strings
-          excludeChannels:
-            row.excludeChannels?.split(",").filter(Boolean) ?? [],
-        };
-      });
+      return rows.map(groupedRowToSoundCron);
     } finally {
       await conn.release();
     }
@@ -163,10 +168,7 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
         throw new Error("Multiple soundcrons found - this is bad");
       }
       const row = rows[0];
-      return {
-        ...row,
-        excludeChannels: row.excludeChannels?.split(",").filter(Boolean) ?? [],
-      };
+      return groupedRowToSoundCron(row);
     } finally {
       await conn.release();
     }
@@ -177,26 +179,22 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     try {
       const query = `
         SELECT server_id, soundcron_name, cron, audio, mute, soundcron_description,
-        GROUP_CONCAT(ec.channel_id) AS excluded_channels 
+        GROUP_CONCAT(ec.channel_id) AS exclude_channels 
         FROM soundcrons sc
         LEFT JOIN excluded_channels ec ON sc.soundcron_id = ec.soundcron_id
         GROUP BY sc.soundcron_id`;
 
-      type WithServerId<T> = T & { serverId: string };
+      type WithServerId<T> = T & { server_id: string };
       const rows =
         await conn.query<Array<WithServerId<GroupedSoundCronRow>>>(query);
       const result: Record<string, SoundCron[]> = {};
       for (const row of rows) {
         // We will just cast here. If an invalid serverId made it into the database, we have bigger problems.
-        const serverId = row.serverId;
+        const serverId = row.server_id;
         if (result[serverId] === undefined) {
           result[serverId] = [];
         }
-        result[serverId].push({
-          ...row,
-          excludeChannels:
-            row.excludeChannels?.split(",").filter(Boolean) ?? [],
-        });
+        result[serverId].push(groupedRowToSoundCron(row));
       }
       return result;
     } finally {

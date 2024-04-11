@@ -15,7 +15,7 @@ services:
     environment:
       REDIS_HOST: redis
       MARIADB_URI: mariadb://dev:dev@mariadb/bigben-dev
-      DEBUG: campa:*
+      DEBUG: campa*
     depends_on:
       - redis
       - mariadb

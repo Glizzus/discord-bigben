@@ -1,5 +1,6 @@
 import { type UUID } from "crypto";
 import { type Redis } from "ioredis";
+import { debugLogger } from "./logging";
 
 export interface WorkerRecordRepo {
   addWorkerRecord: (workerId: UUID, jobId: string) => Promise<void>;
@@ -17,10 +18,15 @@ export class RedisWorkerRecordRepo implements WorkerRecordRepo {
   }
 
   async addWorkerRecord(workerId: UUID, jobId: string): Promise<void> {
+    const previousWorker = await this.redis.get(`soundCron:${jobId}`);
+    if (previousWorker !== null) {
+      debugLogger(`Job ${jobId} is already assigned to worker ${previousWorker}`);
+    }
     await this.redis
       .multi()
       .srem("unassigned", jobId)
       .sadd(this.keyify(workerId), jobId)
+      .set(`soundCron:${jobId}`, workerId)
       .exec();
   }
 

@@ -16,4 +16,6 @@ export interface SoundCronWorkerMediator {
   markWorkerDead: (workerId: UUID) => Promise<void>;
 
   markSoundCronRemoved: (soundCronKey: string) => Promise<void>;
+
+  heartbeat: () => Promise<void>;
 }

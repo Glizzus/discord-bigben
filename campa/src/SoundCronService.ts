@@ -6,11 +6,11 @@ import {
   type SoundCronJobEstablished,
   type SoundCronJob,
 } from "@discord-bigben/types";
-import { type UUID } from "crypto";
 import { type WorkerRecordRepo } from "./WorkerRecordRepo";
 import type winston from "winston";
 import { type Redis } from "ioredis";
 import { debugLogger } from "./logging";
+import { UUID } from "crypto";
 
 type SoundCronQueue = bullmq.Queue<SoundCronJob, SoundCronJobEstablished>;
 
@@ -68,6 +68,10 @@ export class SoundCronService {
         clearInterval(timeout);
       }, heartbeatInterval);
     });
+
+    setInterval(async () => {
+      await this.redis.setex("heartbeat:master", 10, 1);
+    }, 5000);
   }
 
   private async checkWorkerAlive(workerId: UUID): Promise<boolean> {
@@ -109,6 +113,11 @@ export class SoundCronService {
     serverId: string,
     soundCron: SoundCron,
   ): Promise<void> {
+    if (serverId === undefined) {
+      throw new SoundCronServiceError("Server ID is undefined - refusing to enqueue soundcron");
+    } else if (soundCron.name === undefined) {
+      throw new SoundCronServiceError("Soundcron name is undefined (not literally) - refusing to enqueue soundcron");
+    }
     // This key is guaranteed to be unique by our database schema
     const key = `${serverId}:${soundCron.name}`;
     const jobData: SoundCronJob = {

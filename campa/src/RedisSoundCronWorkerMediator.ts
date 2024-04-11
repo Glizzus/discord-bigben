@@ -39,4 +39,8 @@ export class RedisSoundCronWorkerMediator implements SoundCronWorkerMediator {
   async markSoundCronRemoved(soundCronKey: string): Promise<void> {
     await this.redis.sadd("removedSoundCrons", soundCronKey);
   }
+
+  async heartbeat(): Promise<void> {
+    await this.redis.setex(`heartbeat:master`, 10, 1);
+  }
 }
