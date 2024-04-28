@@ -50,7 +50,7 @@ export interface SoundCronRepo {
    * @param name the name of the soundcron to get
    * @returns a promise that resolves with the soundcron and its data
    */
-  getCron: (serverId: string, name: string) => Promise<SoundCron>;
+  getCron: (serverId: string, name: string) => Promise<SoundCron | null>;
 
   /**
    * Lists all soundCrons for a server.
@@ -90,9 +90,9 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
 
       // 2. Insert the soundCron itself
       const insertSoundCronQuery =
-        "INSERT INTO soundcrons (server_id, soundcron_name, cron, audio, mute, soundcron_description) VALUES (?, ?, ?, ?, ?, ?)";
-      const { name, cron, audio, mute, description } = soundCron;
-      const params = [serverId, name, cron, audio, mute ?? false, description];
+        "INSERT INTO soundcrons (server_id, soundcron_name, cron, timezone, audio, mute, soundcron_description) VALUES (?, ?, ?, ?, ?, ?, ?)";
+      const { name, cron, timezone, audio, mute, description } = soundCron;
+      const params = [serverId, name, cron, timezone, audio, mute ?? false, description];
       debugLogger(
         `Inserting soundCron ${serverId}:${soundCron.name} with params ${params.toString()}`,
       );
@@ -141,7 +141,7 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     const conn = await this.pool.getConnection();
     try {
       const query = `
-        SELECT sc.soundcron_name, sc.cron, sc.audio, sc.mute, sc.soundcron_description,
+        SELECT sc.soundcron_name, sc.cron, sc.timezone, sc.audio, sc.mute, sc.soundcron_description,
         GROUP_CONCAT(ec.channel_id) AS exclude_channels
         FROM soundcrons sc
         LEFT JOIN excluded_channels ec ON sc.soundcron_id = ec.soundcron_id
@@ -154,7 +154,7 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     }
   }
 
-  async getCron(serverId: string, name: string): Promise<SoundCron> {
+  async getCron(serverId: string, name: string): Promise<SoundCron | null> {
     const conn = await this.pool.getConnection();
     try {
       const query =
@@ -163,7 +163,9 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
         serverId,
         name,
       ]);
-      if (rows.length === 0) throw new Error("Soundcron not found");
+      if (rows.length === 0) {
+        return null;
+      }
       if (rows.length > 1) {
         throw new Error("Multiple soundcrons found - this is bad");
       }

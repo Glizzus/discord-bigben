@@ -6,7 +6,6 @@ import { debugLogger, logger } from "./logging";
 import { ScheduleCommand } from "./ScheduleCommand";
 import { type Command } from "./Command";
 import { Redis } from "ioredis";
-import { RedisWorkerRecordRepo } from "./WorkerRecordRepo";
 
 export interface SoundCron {
   name: string;
@@ -58,13 +57,10 @@ async function main(): Promise<void> {
     // We need to make this null for some reason or it errors
     maxRetriesPerRequest: null,
   });
-  const workerRepo = new RedisWorkerRecordRepo(redis);
-
   const pool = mariadb.createPool(mariadbUri);
   const soundCronRepo = new MariaDbSoundCronRepo(pool);
 
   const soundCronService = new SoundCronService(
-    workerRepo,
     soundCronRepo,
     redis,
     logger,
@@ -113,16 +109,6 @@ async function main(): Promise<void> {
       }
     }
   });
-
-  const retries = 5;
-  for (let i = 0; i < retries; i++) {
-    try {
-      await soundCronService.startAllCrons();
-    } catch (err) {
-      logger.error(`Failed to start all crons: ${err}`);
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-    }
-  }
 }
 
 main().catch((err) => {
