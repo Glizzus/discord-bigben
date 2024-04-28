@@ -50,7 +50,7 @@ export interface SoundCronRepo {
    * @param name the name of the soundcron to get
    * @returns a promise that resolves with the soundcron and its data
    */
-  getCron: (serverId: string, name: string) => Promise<SoundCron>;
+  getCron: (serverId: string, name: string) => Promise<SoundCron | null>;
 
   /**
    * Lists all soundCrons for a server.
@@ -154,7 +154,7 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     }
   }
 
-  async getCron(serverId: string, name: string): Promise<SoundCron> {
+  async getCron(serverId: string, name: string): Promise<SoundCron | null> {
     const conn = await this.pool.getConnection();
     try {
       const query =
@@ -163,7 +163,9 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
         serverId,
         name,
       ]);
-      if (rows.length === 0) throw new Error("Soundcron not found");
+      if (rows.length === 0) {
+        return null;
+      }
       if (rows.length > 1) {
         throw new Error("Multiple soundcrons found - this is bad");
       }

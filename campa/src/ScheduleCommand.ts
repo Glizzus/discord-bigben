@@ -1,11 +1,13 @@
 import * as discord from "discord.js";
 import { type SoundCronService } from "./SoundCronService";
 import { type Command } from "./Command";
+import TrieSearch from "trie-search";
 
 /**
  * A command for managing the sound schedule.
  */
 export class ScheduleCommand implements Command {
+
   constructor(private readonly soundCronService: SoundCronService) {}
 
   data = new discord.SlashCommandBuilder()
@@ -40,6 +42,12 @@ export class ScheduleCommand implements Command {
         )
         .addBooleanOption((opt) =>
           opt.setName("mute").setDescription("Mute the bot"),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName("timezone")
+            .setDescription("The timezone that the sound will play at")
+            .setAutocomplete(true),
         )
         .addStringOption((opt) =>
           opt
@@ -82,6 +90,7 @@ export class ScheduleCommand implements Command {
     const cron = interaction.options.getString("cron", true);
     const audioUrl = interaction.options.getString("audio_url");
     const audioFile = interaction.options.getAttachment("audio_file");
+    const timezone = interaction.options.getString("timezone") ?? undefined;
 
     const audio = (() => {
       if (audioUrl !== null && audioFile !== null) {
@@ -106,6 +115,7 @@ export class ScheduleCommand implements Command {
       audio,
       mute,
       description,
+      timezone
     };
     await this.soundCronService.addCron(interaction.guildId, soundCron);
     await interaction.reply(`Added soundcron ${name}`);
@@ -147,6 +157,45 @@ export class ScheduleCommand implements Command {
     }
   }
 
+  /* A precomputed trie of timezones for autocomplete.
+  It is already mapped to the format that Discord expects. */
+  private trie = (() => {
+    const trieSearch = new TrieSearch<discord.ApplicationCommandOptionChoiceData>("name");
+    trieSearch.addAll(Intl.supportedValuesOf("timeZone").map((tz) => {
+      return { name: tz, value: tz };
+    }));
+    return trieSearch;
+  })();
+
+  /* This is a list of common timezones that we will suggest to the user.
+  It is pre-mapped to the format that Discord expects. */
+  private commonTimeZones = [
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "America/Phoenix",
+    "America/Anchorage",
+    "Pacific/Honolulu",
+    "America/Toronto",
+    "America/Vancouver",
+    "Europe/London",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Europe/Moscow",
+    "Asia/Tokyo",
+    "Asia/Shanghai",
+    "Asia/Dubai",
+    "Asia/Karachi",
+    "Asia/Dhaka",
+    "Asia/Jakarta",
+    "Asia/Manila",
+    "Australia/Sydney",
+    "Pacific/Auckland",
+  ].map((tz) => {
+    return { name: tz, value: tz };
+  });
+
   async autocomplete(
     interaction: discord.AutocompleteInteraction,
   ): Promise<void> {
@@ -155,6 +204,17 @@ export class ScheduleCommand implements Command {
     }
     const subCommand = interaction.options.getSubcommand();
     switch (subCommand) {
+      case "add": {
+        const focusedOption = interaction.options.getFocused(true);
+        if (focusedOption.name === "timezone") {
+          if (focusedOption.value === "") {
+            await interaction.respond(this.commonTimeZones);
+            return;
+          }
+          const candidates = this.trie.get(focusedOption.value).slice(0, 25);
+          await interaction.respond(candidates);
+        }
+      }
       case "remove": {
         const focusedOption = interaction.options.getFocused(true);
         if (focusedOption.name === "name") {
