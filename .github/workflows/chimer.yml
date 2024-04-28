@@ -1,4 +1,4 @@
-name: Chimer migrations
+name: Test, Build and Push Chimer Image
 
 on:
   push:

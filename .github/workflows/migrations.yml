@@ -1,4 +1,4 @@
-name: Migrations Workflow
+name: Test, Build and Push Flyway Image
 
 on:
   push:

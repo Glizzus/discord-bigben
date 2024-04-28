@@ -1,4 +1,4 @@
-name: Campa migrations
+name: Test, Build and Push Campa Image
 
 on:
   push:
