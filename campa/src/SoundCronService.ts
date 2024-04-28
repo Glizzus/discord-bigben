@@ -11,6 +11,21 @@ import { type Redis } from "ioredis";
 
 type SoundCronQueue = bullmq.Queue<SoundCronJob, SoundCronJobEstablished>;
 
+const AddCronFailureReasonMap = {
+  InvalidCron: "InvalidCron",
+  DatabaseError: "DatabaseError",
+  QueueError: "QueueError",
+} as const;
+
+type AddCronFailureReason = typeof AddCronFailureReasonMap[keyof typeof AddCronFailureReasonMap];
+
+export type AddCronResult = {
+  success: true;
+} | {
+  success: false;
+  reason: AddCronFailureReason;
+};
+
 /**
  * A service for managing soundcrons. This service is responsible for adding and removing soundcrons.
  * This handles data persistence and queue management.
@@ -64,18 +79,16 @@ export class SoundCronService {
    * @param soundCron the soundcron and its options
    * @throws SoundCronServiceError if the soundcron is invalid or if there is an error adding it to the database or queue
    */
-  async addCron(serverId: string, soundCron: SoundCron): Promise<void> {
-    const baseErrorMessage = `Unable to add soundcron ${soundCron.name} for server ${serverId}`;
-
-    // 1. Ensure that the cron expression is valid
+  async addCron(serverId: string, soundCron: SoundCron): Promise<AddCronResult> {
+    /* 1. Ensure that the cron expression is valid.
+    This will throw an error if it is not. */
     try {
       cronparser.parseExpression(soundCron.cron);
     } catch (err) {
-      if (err instanceof Error) {
-        throw new SoundCronServiceError(
-          `${baseErrorMessage}: Invalid cron expression`,
-          err,
-        );
+      this.logger.error(`Invalid cron expression ${soundCron.cron}: ${err}`);
+      return {
+        success: false,
+        reason: AddCronFailureReasonMap.InvalidCron
       }
     }
 
@@ -83,11 +96,10 @@ export class SoundCronService {
     try {
       await this.soundCronRepo.addCron(serverId, soundCron);
     } catch (err) {
-      if (err instanceof Error) {
-        throw new SoundCronServiceError(
-          `${baseErrorMessage}: Unable to add to database`,
-          err,
-        );
+      this.logger.error(`Error adding soundcron to database: ${err}`);
+      return {
+        success: false,
+        reason: AddCronFailureReasonMap.DatabaseError
       }
     }
 
@@ -95,12 +107,15 @@ export class SoundCronService {
     try {
       await this.enqueueCron(serverId, soundCron);
     } catch (err) {
-      if (err instanceof Error) {
-        throw new SoundCronServiceError(
-          `${baseErrorMessage}: Unable to add to queue`,
-          err,
-        );
+      this.logger.error(`Error adding soundcron to queue: ${err}`);
+      return {
+        success: false,
+        reason: AddCronFailureReasonMap.QueueError
       }
+    }
+ 
+    return {
+      success: true
     }
   }
 

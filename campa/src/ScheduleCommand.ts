@@ -47,6 +47,8 @@ export class ScheduleCommand implements Command {
           opt
             .setName("timezone")
             .setDescription("The timezone that the sound will play at")
+            /* This autocomplete requires a bit of finesse because there are
+            hundreds of timezones */
             .setAutocomplete(true),
         )
         .addStringOption((opt) =>
@@ -92,18 +94,20 @@ export class ScheduleCommand implements Command {
     const audioFile = interaction.options.getAttachment("audio_file");
     const timezone = interaction.options.getString("timezone") ?? undefined;
 
-    const audio = (() => {
+    const audio = await (async () => {
       if (audioUrl !== null && audioFile !== null) {
-        throw new Error(
-          "audio_url and audio_file are mutually exclusive, please provide only one",
-        );
+        await interaction.reply("Please provide either an audio file or URL, not both");
+        return null;
       }
       if (audioUrl !== null) return audioUrl;
       if (audioFile !== null) return audioFile.url;
-      throw new Error(
-        "audio_url or audio_file is required, please provide one",
-      );
+      await interaction.reply("Please provide an audio file or URL");
+      return null;
     })();
+  
+    if (audio === null) {
+      return;
+    }
 
     const mute = interaction.options.getBoolean("mute") ?? false;
     const description =
@@ -117,8 +121,22 @@ export class ScheduleCommand implements Command {
       description,
       timezone
     };
-    await this.soundCronService.addCron(interaction.guildId, soundCron);
-    await interaction.reply(`Added soundcron ${name}`);
+    const result = await this.soundCronService.addCron(interaction.guildId, soundCron);
+    if (result.success) {
+      await interaction.reply(`Added soundcron ${name}`);
+      return;
+    }
+    switch (result.reason) {
+      case "InvalidCron":
+        await interaction.reply("Invalid cron expression");
+        return;
+      // We don't tell the user about these errors because they are internal
+      case "DatabaseError":
+      case "QueueError":
+      default:
+        await interaction.reply("An error occurred");
+        return;
+    }
   }
 
   private async remove(
