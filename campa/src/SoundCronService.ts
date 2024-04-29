@@ -146,22 +146,22 @@ export class SoundCronService {
       pattern: soundCron.cron,
       tz: soundCron.timezone,
     };
-    /* We debug very heavily here because this is a critical operation.
+    /* We log heavily here because this is a critical operation.
     It would be extremely annoying to the user if they tried to remove a soundcron,
     but it kept playing because it wasn't removed from the queue */
-    debugLogger(`Removing soundcron ${jobName} from queue with repeat options ${JSON.stringify(repeatOpts)}`);
-    const removedFromQueue = this.soundCronQueue.removeRepeatable(jobName, repeatOpts);
-    const removedFromDatabase = this.soundCronRepo.removeCron(serverId, name);
-  
-    /* We run these two in tandem for two reasons:
-    1. Performance (minor)
-    2. Even if one fails, we would hope the other would succeed */
-    const [removed, _ ] = await Promise.all([removedFromQueue, removedFromDatabase]);
-    if (removed) {
+    this.logger.info(`Removing soundcron ${jobName} from queue with repeat options ${JSON.stringify(repeatOpts)}`);
+    const removedFromQueue = await this.soundCronQueue.removeRepeatable(jobName, repeatOpts);
+    if (!removedFromQueue) {
+      this.logger.error(`Soundcron ${jobName} indicated as not removed from queue`);
+      /* We return from here because, if the job is still in the queue, we don't want to remove it from the database.
+      If we remove it from the database, the user can't retry removing it from the queue when the issue is resolved */
       return;
     }
-    // We probably want to indicate to the caller that this happened
-    this.logger.error(`Soundcron ${jobName} indicated as not removed from queue`);
+
+    /* At this point, we know the job was removed from the queue. It will not play.
+    Even if it remains in the database, it is just a recordkeeping issue. The sound
+    will not pester the user */
+    await this.soundCronRepo.removeCron(serverId, name);
   }
 
   async listCrons(serverId: string): Promise<SoundCron[]> {
