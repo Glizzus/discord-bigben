@@ -5,6 +5,7 @@ import { debugLogger } from "./logging";
 type GroupedSoundCronRow = {
   soundcron_name: string;
   cron: string;
+  timezone: string;
   audio: string;
   mute: boolean;
   soundcron_description: string;
@@ -16,6 +17,7 @@ function groupedRowToSoundCron(row: GroupedSoundCronRow): SoundCron {
   return {
     name: row.soundcron_name,
     cron: row.cron,
+    timezone: row.timezone,
     audio: row.audio,
     mute: row.mute,
     description: row.soundcron_description,
@@ -158,7 +160,10 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     const conn = await this.pool.getConnection();
     try {
       const query =
-        "SELECT soundcron_name, cron, audio, mute, soundcron_description FROM soundcrons WHERE server_id = ? AND soundcron_name = ?";
+        `SELECT
+          soundcron_name, cron, timezone, audio, mute, soundcron_description
+        FROM soundcrons
+        WHERE server_id = ? AND soundcron_name = ?`;
       const rows = await conn.query<GroupedSoundCronRow[]>(query, [
         serverId,
         name,

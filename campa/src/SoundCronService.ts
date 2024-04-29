@@ -8,6 +8,7 @@ import {
 } from "@discord-bigben/types";
 import type winston from "winston";
 import { type Redis } from "ioredis";
+import { debugLogger } from "./logging";
 
 type SoundCronQueue = bullmq.Queue<SoundCronJob, SoundCronJobEstablished>;
 
@@ -141,17 +142,26 @@ export class SoundCronService {
     }
 
     const jobName = `${serverId}:${name}`; 
-    const removedFromQueue = this.soundCronQueue.removeRepeatable(jobName, {
+    const repeatOpts = {
       pattern: soundCron.cron,
       tz: soundCron.timezone,
-    });
-
+    };
+    /* We debug very heavily here because this is a critical operation.
+    It would be extremely annoying to the user if they tried to remove a soundcron,
+    but it kept playing because it wasn't removed from the queue */
+    debugLogger(`Removing soundcron ${jobName} from queue with repeat options ${JSON.stringify(repeatOpts)}`);
+    const removedFromQueue = this.soundCronQueue.removeRepeatable(jobName, repeatOpts);
     const removedFromDatabase = this.soundCronRepo.removeCron(serverId, name);
   
     /* We run these two in tandem for two reasons:
     1. Performance (minor)
     2. Even if one fails, we would hope the other would succeed */
-    await Promise.all([removedFromQueue, removedFromDatabase]);
+    const [removed, _ ] = await Promise.all([removedFromQueue, removedFromDatabase]);
+    if (removed) {
+      return;
+    }
+    // We probably want to indicate to the caller that this happened
+    this.logger.error(`Soundcron ${jobName} indicated as not removed from queue`);
   }
 
   async listCrons(serverId: string): Promise<SoundCron[]> {
