@@ -12,7 +12,7 @@ x-common:
 
 services:
   campa:
-    build: ./
+    build: ./campa
     container_name: bigben-campa
     environment:
       CLIENT_ID: ${CLIENT_ID}
@@ -28,16 +28,16 @@ services:
       - flyway
 
   chimer1:
-    <<: *chimer
     container_name: bigben-chimer1
+    <<: *chimer
 
   chimer2:
-    <<: *chimer
     container_name: bigben-chimer2
+    <<: *chimer
 
   chimer3:
-    <<: *chimer
     container_name: bigben-chimer3
+    <<: *chimer
 
   minio:
     image: minio/minio:RELEASE.2024-05-01T01-11-10Z
