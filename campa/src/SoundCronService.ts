@@ -8,7 +8,6 @@ import {
 } from "@discord-bigben/types";
 import type winston from "winston";
 import { type Redis } from "ioredis";
-import undici from "undici";
 import { debugLogger } from "./logging";
 
 type SoundCronQueue = bullmq.Queue<SoundCronJob, SoundCronJobEstablished>;
