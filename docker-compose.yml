@@ -61,7 +61,7 @@ services:
         - path: ./warehouse/main.go
           action: rebuild
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:10002/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:10002/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -101,10 +101,12 @@ services:
       MARIADB_PASSWORD: dev
       MARIADB_ROOT_PASSWORD: root
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      start_period: 1m
+      start_interval: 10s
+      interval: 1m
+      timeout: 5s
+      retries: 3
     volumes:
       - bigben-mariadb:/var/lib/mysql
 
