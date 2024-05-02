@@ -118,6 +118,17 @@ async function main() {
       guildId: maxChannel.guild.id,
       adapterCreator: maxChannel.guild.voiceAdapterCreator,
     });
+    try {
+      await discordVoice.entersState(
+        connection,
+        discordVoice.VoiceConnectionStatus.Ready,
+        10000,
+      );
+    } catch (err) {
+      logger.error(`Failed to join voice channel: ${err}`);
+      connection.destroy();
+      return;
+    }
     const subscription = connection.subscribe(audioPlayer);
     if (subscription === undefined) {
       logger.error("Failed to subscribe to audio player - investigation required");
