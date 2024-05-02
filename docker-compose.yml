@@ -67,13 +67,9 @@ services:
       WAREHOUSE_MINIO_ACCESS_KEY: minio
       WAREHOUSE_MINIO_SECRET_KEY: minio123
       WAREHOUSE_DEBUG: 1
-    develop:
-      watch:
-        - path: ./warehouse/main.go
-          action: rebuild
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:10002/health"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost:10002/health"]
+      interval: 5s
       timeout: 10s
       retries: 5
     depends_on:
@@ -98,7 +94,7 @@ services:
       - 6379:6379
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
+      interval: 5s
       timeout: 10s
       retries: 5
     volumes:
@@ -116,11 +112,9 @@ services:
       MARIADB_ROOT_PASSWORD: root
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
-      start_period: 1m
-      start_interval: 10s
-      interval: 1m
-      timeout: 5s
-      retries: 3
+      interval: 5s
+      timeout: 10s
+      retries: 5
     volumes:
       - bigben-mariadb:/var/lib/mysql
 
