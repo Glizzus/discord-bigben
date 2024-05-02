@@ -12,7 +12,8 @@ x-common:
 
 services:
   campa:
-    build: ./campa
+    build: ./
+    container_name: bigben-campa
     environment:
       CLIENT_ID: ${CLIENT_ID}
       DISCORD_TOKEN: ${DISCORD_TOKEN}
@@ -28,15 +29,19 @@ services:
 
   chimer1:
     <<: *chimer
+    container_name: bigben-chimer1
 
   chimer2:
     <<: *chimer
+    container_name: bigben-chimer2
 
   chimer3:
     <<: *chimer
+    container_name: bigben-chimer3
 
   minio:
     image: minio/minio:RELEASE.2024-05-01T01-11-10Z
+    container_name: bigben-minio
     ports:
       - 9000:9000
       - 9001:9001
@@ -49,6 +54,7 @@ services:
   
   warehouse:
     build: ./warehouse
+    container_name: bigben-warehouse
     ports:
       - 10002:10002
     environment:
@@ -70,6 +76,7 @@ services:
 
   flyway:  
     build: ./migrations
+    container_name: bigben-flyway
     environment:
       FLYWAY_URL: jdbc:mariadb://mariadb:3306/bigben-dev
       FLYWAY_USER: dev
@@ -81,6 +88,7 @@ services:
 
   redis:
     image: redis:7.2-alpine3.19
+    container_name: bigben-redis
     ports:
       - 6379:6379
     healthcheck:
@@ -93,6 +101,7 @@ services:
 
   mariadb:
     image: mariadb:11.3.2
+    container_name: bigben-mariadb
     ports:
       - 3306:3306
     environment:
