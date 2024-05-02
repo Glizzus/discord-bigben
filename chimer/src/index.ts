@@ -86,10 +86,19 @@ function getBullMqConnectionOptions() {
   };
 }
 
+function getWarehouseEndpoint() {
+  const warehouseEndpointVar = "CHIMER_WAREHOUSE_ENDPOINT";
+  return process.env[warehouseEndpointVar] ??
+    (() => {
+      throw new Error(`${warehouseEndpointVar} is required`);
+    })();
+}
+
 async function main() {
   logger.info("Starting application");
 
   const redisConnectionOptions = getBullMqConnectionOptions();
+  const warehouseEndpoint = getWarehouseEndpoint();
 
   /* This should be done as late as possible to avoid unnecessary logins
   to Discord. If you log in too often, you will be rate limited */
@@ -111,7 +120,8 @@ async function main() {
     logger.info(
       `Found voice channel ${maxChannel.name} with ${maxChannel.members.size} members`,
     );
-    const { body } = await undici.request(audio);
+    const audioEndpoint = `${warehouseEndpoint}/audio/${encodeURIComponent(audio)}`
+    const { body } = await undici.request(audioEndpoint);
     const resource = discordVoice.createAudioResource(body);
     const connection = discordVoice.joinVoiceChannel({
       channelId: maxChannel.id,

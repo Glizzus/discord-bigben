@@ -8,6 +8,7 @@ import {
 } from "@discord-bigben/types";
 import type winston from "winston";
 import { type Redis } from "ioredis";
+import undici from "undici";
 import { debugLogger } from "./logging";
 
 type SoundCronQueue = bullmq.Queue<SoundCronJob, SoundCronJobEstablished>;
@@ -16,6 +17,7 @@ const AddCronFailureReasonMap = {
   InvalidCron: "InvalidCron",
   DatabaseError: "DatabaseError",
   QueueError: "QueueError",
+  AudioUploadError: "AudioUploadError",
 } as const;
 
 type AddCronFailureReason = typeof AddCronFailureReasonMap[keyof typeof AddCronFailureReasonMap];
@@ -36,6 +38,7 @@ export class SoundCronService {
 
   constructor(
     private readonly soundCronRepo: SoundCronRepo,
+    private readonly warehouseEndpoint: string,
     redis: Redis,
     private readonly logger: winston.Logger,
   ) {
@@ -93,7 +96,25 @@ export class SoundCronService {
       }
     }
 
-    // 2. Insert the cron into the database
+    // 2. Upload the audio to the warehouse
+    const encodedAudioUrl = encodeURIComponent(soundCron.audio);
+    const endpoint = `${this.warehouseEndpoint}/audio/${encodedAudioUrl}`;
+    debugLogger(`Uploading audio to warehouse at ${endpoint}`);
+    const audioUpload = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Length": "0"
+      },
+    });
+    if (!audioUpload.ok) {
+      this.logger.error(`Error uploading audio to warehouse: ${audioUpload.status}`);
+      return {
+        success: false,
+        reason: AddCronFailureReasonMap.AudioUploadError
+      }
+    }
+
+    // 3. Insert the cron into the database
     try {
       await this.soundCronRepo.addCron(serverId, soundCron);
     } catch (err) {
@@ -104,7 +125,7 @@ export class SoundCronService {
       }
     }
 
-    // 3. Add the cron to the queue
+    // 4. Add the cron to the queue
     try {
       await this.enqueueCron(serverId, soundCron);
     } catch (err) {
@@ -162,6 +183,14 @@ export class SoundCronService {
     Even if it remains in the database, it is just a recordkeeping issue. The sound
     will not pester the user */
     await this.soundCronRepo.removeCron(serverId, name);
+
+    const encodedAudioUrl = encodeURIComponent(soundCron.audio);
+    const endpoint = `${this.warehouseEndpoint}/audio/${encodedAudioUrl}`;
+    this.logger.info(`Deleting audio from warehouse at ${endpoint}`);
+    const audioDelete = await fetch(endpoint, { method: "DELETE" });
+    if (!audioDelete.ok) {
+      this.logger.error(`Error deleting audio from warehouse: ${audioDelete.status}`);
+    }
   }
 
   async listCrons(serverId: string): Promise<SoundCron[]> {

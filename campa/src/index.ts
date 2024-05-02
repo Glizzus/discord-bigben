@@ -44,6 +44,13 @@ const redisPort =
     return defaultPort;
   })();
 
+const warehouseEndpointVar = "CAMPA_WAREHOUSE_ENDPOINT";
+const warehouseEndpoint =
+  process.env[warehouseEndpointVar] ??
+  (() => {
+    throw new Error(`${warehouseEndpointVar} is required`);
+  })();
+
 const options: discord.ClientOptions = {
   intents: [
     discord.GatewayIntentBits.Guilds,
@@ -62,6 +69,7 @@ async function main(): Promise<void> {
 
   const soundCronService = new SoundCronService(
     soundCronRepo,
+    warehouseEndpoint,
     redis,
     logger,
   );
