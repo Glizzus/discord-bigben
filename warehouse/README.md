@@ -28,6 +28,10 @@ It also abstracts away the storage backend, meaning that other services like **C
 
 - `WAREHOUSE_MINIO_SECRET_KEY`: The secret key for the Minio storage backend.`
 
+- `WAREHOUSE_PORT`: (Optional) The port on which the Warehouse service should listen. Defaults to `10002`.
+
+- `WAREHOUSE_HOST`: (Optional) The host on which the Warehouse service should listen. Defaults to `localhost`.
+
 ## API
 
 ### `POST /audio/<audioURL>`
