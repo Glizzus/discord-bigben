@@ -67,6 +67,7 @@ services:
       WAREHOUSE_MINIO_ACCESS_KEY: minio
       WAREHOUSE_MINIO_SECRET_KEY: minio123
       WAREHOUSE_DEBUG: 1
+      WAREHOUSE_HOST: '0.0.0.0'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:10002/health"]
       interval: 5s
