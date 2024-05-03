@@ -4,6 +4,14 @@ Warehouse is a lightweight audio storage service designed for the BigBen Discord
 
 It handles fetching, storing, and streaming of audio files.
 
+## Why Golang?
+
+The rest of the BigBen services are written in Node.js, but we chose to write Warehouse in Golang for a few reasons:
+
+- **Performance**: Warehouse does a lot of streaming, and Golang's performance is better than Node.js for this use case.
+
+- **Minio SDK**: The Minio SDK for Golang is one of, if not the best SDK for Minio. It is well-documented and easy to use.
+
 ## Why Warehouse?
 
 When a user uploads a file to Discord, the file is stored on Discord's CDN.
