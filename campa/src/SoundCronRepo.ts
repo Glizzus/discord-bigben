@@ -1,6 +1,6 @@
 import type mariadb from "mariadb";
-import { type SoundCron } from ".";
 import { debugLogger } from "./logging";
+import { SoundCron } from "./SoundCron";
 
 type GroupedSoundCronRow = {
   soundcron_name: string;
@@ -14,15 +14,15 @@ type GroupedSoundCronRow = {
 }
 
 function groupedRowToSoundCron(row: GroupedSoundCronRow): SoundCron {
-  return {
+  return new SoundCron({
     name: row.soundcron_name,
     cron: row.cron,
     timezone: row.timezone,
     audio: row.audio,
     mute: row.mute,
     description: row.soundcron_description,
-    excludeChannels: row.exclude_channels?.split(",").filter(Boolean) ?? []
-  };
+    excludeChannels: row.exclude_channels?.split(","),
+  });
 }
 
 /**

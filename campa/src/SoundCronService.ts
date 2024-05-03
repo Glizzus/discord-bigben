@@ -1,16 +1,15 @@
 import * as bullmq from "bullmq";
 import * as cronparser from "cron-parser";
-import { type SoundCron } from ".";
 import { type SoundCronRepo, SoundCronServiceError } from "./SoundCronRepo";
 import {
-  type SoundCronJobEstablished,
   type SoundCronJob,
 } from "@discord-bigben/types";
 import type winston from "winston";
 import { type Redis } from "ioredis";
 import { debugLogger } from "./logging";
+import { SoundCron } from "./SoundCron";
 
-type SoundCronQueue = bullmq.Queue<SoundCronJob, SoundCronJobEstablished>;
+type SoundCronQueue = bullmq.Queue<SoundCronJob>;
 
 const AddCronFailureReasonMap = {
   InvalidCron: "InvalidCron",
@@ -61,8 +60,6 @@ export class SoundCronService {
     const jobData: SoundCronJob = {
       serverId,
       name,
-      cron,
-      timezone: timezone ?? "UTC",
       audio: soundCron.audio,
       mute: soundCron.mute ?? false,
       excludeChannels: soundCron.excludeChannels ?? [],
@@ -95,11 +92,9 @@ export class SoundCronService {
       }
     }
 
-    // 2. Upload the audio to the warehouse
-    const encodedAudioUrl = encodeURIComponent(soundCron.audio);
-    const endpoint = `${this.warehouseEndpoint}/audio/${encodedAudioUrl}`;
-    debugLogger(`Uploading audio to warehouse at ${endpoint}`);
-    const audioUpload = await fetch(endpoint, {
+    const audioEndpoint = `${this.warehouseEndpoint}/audio/${encodeURIComponent(soundCron.audio)}`;
+    debugLogger(`Uploading audio to warehouse at ${audioEndpoint}`);
+    const audioUpload = await fetch(audioEndpoint, {
       method: "POST",
       headers: {
         "Content-Length": "0"
@@ -111,6 +106,10 @@ export class SoundCronService {
         success: false,
         reason: AddCronFailureReasonMap.AudioUploadError
       }
+    }
+
+    if (soundCron.timezone === undefined) {
+      soundCron.timezone = "Etc/UTC";
     }
 
     // 3. Insert the cron into the database
@@ -183,10 +182,9 @@ export class SoundCronService {
     will not pester the user */
     await this.soundCronRepo.removeCron(serverId, name);
 
-    const encodedAudioUrl = encodeURIComponent(soundCron.audio);
-    const endpoint = `${this.warehouseEndpoint}/audio/${encodedAudioUrl}`;
-    this.logger.info(`Deleting audio from warehouse at ${endpoint}`);
-    const audioDelete = await fetch(endpoint, { method: "DELETE" });
+    const audioEndpoint = `${this.warehouseEndpoint}/audio/${encodeURIComponent(soundCron.audio)}`;
+    this.logger.info(`Deleting audio from warehouse at ${audioEndpoint}`);
+    const audioDelete = await fetch(audioEndpoint, { method: "DELETE" });
     if (!audioDelete.ok) {
       this.logger.error(`Error deleting audio from warehouse: ${audioDelete.status}`);
     }

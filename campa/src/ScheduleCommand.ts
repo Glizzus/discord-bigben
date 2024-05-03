@@ -2,6 +2,7 @@ import * as discord from "discord.js";
 import { type SoundCronService } from "./SoundCronService";
 import { type Command } from "./Command";
 import TrieSearch from "trie-search";
+import { SoundCron } from "./SoundCron";
 
 /**
  * A command for managing the sound schedule.
@@ -113,14 +114,15 @@ export class ScheduleCommand implements Command {
     const description =
       interaction.options.getString("description") ?? undefined;
 
-    const soundCron = {
+    const soundCron = new SoundCron({
       name,
       cron,
       audio,
+      timezone,
       mute,
       description,
-      timezone
-    };
+    });
+
     const result = await this.soundCronService.addCron(interaction.guildId, soundCron);
     if (result.success) {
       await interaction.reply(`Added soundcron ${name}`);
@@ -182,12 +184,15 @@ export class ScheduleCommand implements Command {
     trieSearch.addAll(Intl.supportedValuesOf("timeZone").map((tz) => {
       return { name: tz, value: tz };
     }));
+    // We add this manually because it is not in the Intl list
+    trieSearch.add({ name: "Etc/UTC", value: "Etc/UTC" })
     return trieSearch;
   })();
 
   /* This is a list of common timezones that we will suggest to the user.
   It is pre-mapped to the format that Discord expects. */
   private commonTimeZones = [
+    "Etc/UTC",
     "America/New_York",
     "America/Chicago",
     "America/Denver",
@@ -205,7 +210,6 @@ export class ScheduleCommand implements Command {
     "Asia/Shanghai",
     "Asia/Dubai",
     "Asia/Karachi",
-    "Asia/Dhaka",
     "Asia/Jakarta",
     "Asia/Manila",
     "Australia/Sydney",

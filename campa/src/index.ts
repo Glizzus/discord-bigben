@@ -7,17 +7,6 @@ import { ScheduleCommand } from "./ScheduleCommand";
 import { type Command } from "./Command";
 import { Redis } from "ioredis";
 
-export interface SoundCron {
-  name: string;
-  cron: string;
-  audio: string;
-
-  timezone?: string;
-  excludeChannels?: string[];
-  mute?: boolean;
-  description?: string;
-}
-
 const mariadbUri =
   process.env.MARIADB_URI ??
   (() => {
@@ -98,23 +87,27 @@ async function main(): Promise<void> {
   }
 
   discordClient.on(discord.Events.InteractionCreate, async (interaction) => {
-    if (interaction.isChatInputCommand()) {
-      try {
+    try {
+      if (interaction.isChatInputCommand()) {
+        try {
+          const command = commandMap[interaction.commandName];
+          if (command !== undefined) {
+            await command.execute(interaction);
+          } else {
+            await interaction.reply("Unknown command");
+          }
+        } catch (err) {
+          logger.error(err);
+          await interaction.reply("An unknown error occurred");
+        }
+      } else if (interaction.isAutocomplete()) {
         const command = commandMap[interaction.commandName];
         if (command !== undefined) {
-          await command.execute(interaction);
-        } else {
-          await interaction.reply("Unknown command");
+          await command.autocomplete(interaction);
         }
-      } catch (err) {
-        logger.error(err);
-        await interaction.reply("An unknown error occurred");
       }
-    } else if (interaction.isAutocomplete()) {
-      const command = commandMap[interaction.commandName];
-      if (command !== undefined) {
-        await command.autocomplete(interaction);
-      }
+    } catch (err) {
+      logger.error(err);
     }
   });
 }
