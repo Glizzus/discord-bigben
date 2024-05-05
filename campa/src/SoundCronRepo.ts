@@ -1,4 +1,4 @@
-import type mariadb from "mariadb";
+import mariadb from "mariadb";
 import { debugLogger } from "./logging";
 import { SoundCron } from "./SoundCron";
 
@@ -73,11 +73,12 @@ export interface SoundCronRepo {
  * A MariaDB implementation of the SoundCronRepo.
  */
 export class MariaDbSoundCronRepo implements SoundCronRepo {
-  /**
-   * Constructs a new MariaDbSoundCronRepo.
-   * @param pool a mariadb pool to use for database connections
-   */
-  constructor(private readonly pool: mariadb.Pool) {}
+
+  private pool: mariadb.Pool;
+
+  constructor(uri: string) {
+    this.pool = mariadb.createPool(uri);
+  }
 
   async addCron(serverId: string, soundCron: SoundCron): Promise<void> {
     const conn = await this.pool.getConnection();

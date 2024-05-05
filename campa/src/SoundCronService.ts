@@ -5,7 +5,6 @@ import {
   type SoundCronJob,
 } from "@discord-bigben/types";
 import type winston from "winston";
-import { type Redis } from "ioredis";
 import { debugLogger } from "./logging";
 import { SoundCron } from "./SoundCron";
 
@@ -37,11 +36,15 @@ export class SoundCronService {
   constructor(
     private readonly soundCronRepo: SoundCronRepo,
     private readonly warehouseEndpoint: string,
-    redis: Redis,
+    redisHost: string,
+    redisPort: number,
     private readonly logger: winston.Logger,
   ) {
     this.soundCronQueue = new bullmq.Queue("soundCron", {
-      connection: redis
+      connection: {
+        host: redisHost,
+        port: redisPort,
+      }
     });
   }
 

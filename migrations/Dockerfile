@@ -1,4 +1,4 @@
-FROM flyway/flyway:10.11.0-alpine
+FROM flyway/flyway:10.12.0-alpine
 
 LABEL org.opencontainers.image.created="${BUILD_TIME}"
 LABEL org.opencontainers.image.source="https://github.com/glizzus/discord-bigben"

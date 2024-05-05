@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:22.1.0-alpine3.18 AS build
 
 WORKDIR /usr/src/app
 
@@ -10,7 +10,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM node:20-bullseye-slim
+FROM node:22.1.0-alpine3.18
 
 LABEL org.opencontainers.image.created="${BUILD_TIME}"
 LABEL org.opencontainers.image.source="https://github.com/glizzus/discord-bigben"

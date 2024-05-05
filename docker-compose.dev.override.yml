@@ -1,0 +1,47 @@
+services:
+  campa:
+    pull_policy: never
+    environment:
+      DEBUG: campa*
+    depends_on:
+      - redis
+      - mariadb
+      - flyway
+
+  chimer:
+    pull_policy: never
+    environment:
+      DEBUG: chimer:*
+    depends_on:
+      - redis
+
+  minio:
+    ports:
+      - 9000:9000
+      - 9001:9001
+    command: server /data --console-address ":9001"
+    volumes:
+      - bigben-minio:/data
+  
+  warehouse:
+    pull_policy: never
+
+  redis:
+    ports:
+      - 6379:6379
+    volumes:
+      - bigben-redis:/data
+
+  mariadb:
+    ports:
+      - 3306:3306
+    volumes:
+      - bigben-mariadb:/var/lib/mysql
+
+  flyway:
+    pull_policy: never
+
+volumes:
+  bigben-minio:
+  bigben-redis:
+  bigben-mariadb:

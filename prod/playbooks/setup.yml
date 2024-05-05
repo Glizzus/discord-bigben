@@ -1,0 +1,4 @@
+- name: Setup Infrastructure
+  hosts: all
+  roles:
+    - geerlingguy.docker
