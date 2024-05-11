@@ -3,17 +3,11 @@ services:
     pull_policy: never
     environment:
       DEBUG: campa*
-    depends_on:
-      - redis
-      - mariadb
-      - flyway
 
   chimer:
     pull_policy: never
     environment:
       DEBUG: chimer:*
-    depends_on:
-      - redis
 
   minio:
     ports:
@@ -25,6 +19,8 @@ services:
   
   warehouse:
     pull_policy: never
+    environment:
+      WAREHOUSE_DEBUG: true
 
   redis:
     ports:

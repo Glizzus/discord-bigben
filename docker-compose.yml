@@ -1,9 +1,17 @@
+# The base docker-compose file for the BigBen project.
+# While this works on its own, it is intended to be overridden by other docker-compose files.
+#
+# For example, docker-compose.prod.override.yml is used to override configurations for the production environment.
+# docker-compose.dev.override.yml is used to override configurations for the development environment.
+
+
 services:
   campa:
     image: ghcr.io/glizzus/bigben/campa:${CAMPA_VERSION:-latest}
     build: ./campa
     container_name: bigben-campa
     networks:
+      # Campa needs to talk to Redis, MariaDB, and Warehouse
       - bigben-campa-mariadb
       - bigben-campa-redis
       - bigben-campa-warehouse
@@ -25,6 +33,7 @@ services:
     build: ./chimer
     container_name: bigben-chimer
     networks:
+      # Chimer needs to talk to Redis and Warehouse
       - bigben-chimer-redis
       - bigben-chimer-warehouse
     read_only: true
@@ -36,11 +45,13 @@ services:
       - redis
 
   minio:
-    image: minio/minio:RELEASE.2024-05-01T01-11-10Z
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
     container_name: bigben-minio
     command: server /data
     networks:
+      # MinIO needs to talk to Warehouse and its setup container
       - bigben-warehouse-minio
+      - bigben-minio-setup-network
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
@@ -49,21 +60,41 @@ services:
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
-  
+
+  # MinIO setup container used to create the necessary buckets and users for Warehouse.
+  minio-setup:
+    image: ghcr.io/glizzus/bigben/minio-setup:${MINIO_SETUP_VERSION:-latest}
+    build: ./infra/minio
+    container_name: bigben-minio-setup
+    networks:
+      # The setup container only needs to talk to MinIO
+      - bigben-minio-setup-network
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+
+      MINIO_URL: http://minio:9000
+      MINIO_WAREHOUSE_BUCKET: audio
+
+      MINIO_WAREHOUSE_USER: warehouse
+      MINIO_WAREHOUSE_PASSWORD: warehouse123
+    depends_on:
+      - minio
+
   warehouse:
     image: ghcr.io/glizzus/bigben/warehouse:${WAREHOUSE_VERSION:-latest}
     build: ./warehouse
     container_name: bigben-warehouse
     networks:
+      # Warehouse needs to talk to Campa, Chimer, and MinIO
       - bigben-campa-warehouse
       - bigben-chimer-warehouse
       - bigben-warehouse-minio
     read_only: true
     environment:
       WAREHOUSE_MINIO_ENDPOINT: minio:9000
-      WAREHOUSE_MINIO_ACCESS_KEY: minio
-      WAREHOUSE_MINIO_SECRET_KEY: minio123
-      WAREHOUSE_DEBUG: 1
+      WAREHOUSE_MINIO_ACCESS_KEY: warehouse
+      WAREHOUSE_MINIO_SECRET_KEY: warehouse123
       WAREHOUSE_HOST: '0.0.0.0'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:10002/health"]
@@ -72,11 +103,13 @@ services:
       retries: 5
     depends_on:
       - minio
+      - minio-setup
 
   redis:
     image: redis:7.2-alpine3.19
     container_name: bigben-redis
     networks:
+      # Redis only needs to talk to Campa and Chimer
       - bigben-campa-redis
       - bigben-chimer-redis
     healthcheck:
@@ -89,8 +122,10 @@ services:
     image: mariadb:11.3.2
     container_name: bigben-mariadb
     networks:
+      # MariaDB only needs to talk to Campa, Flyway, and its setup container
       - bigben-campa-mariadb
-      - bigben-mariadb-setup
+      - bigben-flyway-mariadb
+      - bigben-mariadb-setup-network
     environment:
       MARIADB_ROOT_PASSWORD: root
     healthcheck:
@@ -101,10 +136,12 @@ services:
 
   mariadb-setup:
     image: ghcr.io/glizzus/bigben/mariadb-setup:${MARIADB_SETUP_VERSION:-latest}
-    build: ./mariadb-setup
+    build: ./infra/mariadb
     container_name: bigben-mariadb-setup
+    read_only: true
     networks:
-      - bigben-mariadb-setup
+      # The setup container only needs to talk to MariaDB
+      - bigben-mariadb-setup-network
     environment:
       MARIADB_ROOT_PASSWORD: root
       MARIADB_HOST: mariadb
@@ -121,7 +158,9 @@ services:
     image: ghcr.io/glizzus/bigben/flyway:${FLYWAY_VERSION:-latest}
     build: ./migrations
     container_name: bigben-flyway
-    network_mode: service:mariadb
+    networks:
+      # Flyway only needs to talk to MariaDB
+      - bigben-flyway-mariadb
     read_only: true
     environment:
       FLYWAY_URL: jdbc:mariadb://mariadb:3306/bigben_dev
@@ -134,7 +173,6 @@ services:
       - mariadb-setup
 
 networks:
-
   bigben-campa-mariadb:
     name: bigben-campa-mariadb
   bigben-campa-redis:
@@ -150,5 +188,12 @@ networks:
   bigben-warehouse-minio:
     name: bigben-warehouse-minio
 
-  bigben-mariadb-setup:
-    name: bigben-mariadb-setup
+  bigben-mariadb-setup-network:
+    name: bigben-mariadb-setup-network
+
+  bigben-minio-setup-network:
+    name: bigben-minio-setup-network
+
+  bigben-flyway-mariadb:
+    name: bigben-flyway-mariadb
+  

@@ -1,0 +1,60 @@
+# For the production environment, we need to override some configurations.
+#
+# 1. Always pull the image, never try to build it.
+# 2. Environment variables must be dynamically provided outside of the docker-compose file.
+#
+# One noteworthy thing is that the volumes are often hardcoded to /mnt/<something>.
+# This is because our current production environment is provisioned by Terraform,
+# and these directories are provided as block storage.
+# See prod/terraform/main.tf for more information.
+
+services:
+  campa:
+    pull_policy: always
+    environment:
+      CAMPA_MARIADB_URI: mariadb://campa:${CAMPA_MARIADB_PASSWORD}@mariadb/bigben
+
+  chimer:
+    pull_policy: always
+
+  minio:
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - /mnt/minio_drive/data:/data
+
+  minio-setup:
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+
+      MINIO_WAREHOUSE_USER: ${WAREHOUSE_MINIO_ACCESS_KEY}
+      MINIO_WAREHOUSE_PASSWORD: ${WAREHOUSE_MINIO_SECRET_KEY}
+
+  warehouse:
+    pull_policy: always
+    environment:
+      WAREHOUSE_MINIO_ACCESS_KEY: ${WAREHOUSE_MINIO_ACCESS_KEY}
+      WAREHOUSE_MINIO_SECRET_KEY: ${WAREHOUSE_MINIO_SECRET_KEY}
+
+  mariadb:
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    volumes:
+      - /mnt/mariadb_drive/data:/var/lib/mysql
+
+  mariadb-setup:
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      CAMPA_DATABASE: bigben
+      CAMPA_PASSWORD: ${CAMPA_MARIADB_PASSWORD}
+      FLYWAY_PASSWORD: ${FLYWAY_PASSWORD}
+
+  flyway:
+    environment:
+      FLYWAY_PASSWORD: ${FLYWAY_PASSWORD}
+
+  redis:
+    volumes:
+      - /mnt/redis_drive/data:/data

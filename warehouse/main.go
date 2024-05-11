@@ -57,18 +57,6 @@ func NewMinioAudioService(endpoint, accessKey, secretKey, bucket string) (*Minio
 	return &MinioAudioService{client: client, bucket: bucket}, nil
 }
 
-// Init initializes the MinioAudioService by creating the bucket if it does not exist.
-func (s *MinioAudioService) Init(ctx context.Context) error {
-	if err := s.client.MakeBucket(ctx, s.bucket, minio.MakeBucketOptions{}); err != nil {
-		if err.(minio.ErrorResponse).Code == "BucketAlreadyOwnedByYou" {
-			slog.Info("Bucket already exists", "bucket", s.bucket)
-		} else {
-			return fmt.Errorf("error creating bucket %s: %w", s.bucket, err)
-		}
-	}
-	return nil
-}
-
 // Fetch downloads an audio file from a URL and stores it in Minio.
 func (s *MinioAudioService) Fetch(ctx context.Context, audioURL string) error {
 	audioReq, err := http.NewRequestWithContext(ctx, http.MethodGet, audioURL, nil)
@@ -253,9 +241,6 @@ func main() {
 		config.Minio.Bucket)
 	if err != nil {
 		log.Fatalf("error creating minio audio service: %v", err)
-	}
-	if err = service.Init(context.Background()); err != nil {
-		log.Fatalf("error initializing minio audio service: %v", err)
 	}
 
 	mux := constructMux(service)
