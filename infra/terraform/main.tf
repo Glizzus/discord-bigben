@@ -70,5 +70,5 @@ resource "local_file" "hosts" {
   content = templatefile("${path.module}/hosts.ini.tpl", {
     ip = digitalocean_droplet.bigben_vm.ipv4_address
   })
-  filename = "${path.module}/playbooks/hosts.ini"
+  filename = "${path.module}/../playbooks/hosts.ini"
 }
