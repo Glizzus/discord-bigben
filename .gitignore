@@ -7,6 +7,6 @@ tsconfig.tsbuildinfo
 
 ci/flyway/sqlfluff/results.json
 
-prod/terraform.tfstate*
-prod/*.tfvars
-prod/.terraform
+terraform.tfstate*
+*.tfvars
+.terraform
