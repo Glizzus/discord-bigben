@@ -54,6 +54,8 @@ services:
   flyway:
     environment:
       FLYWAY_PASSWORD: ${FLYWAY_PASSWORD}
+      FLYWAY_URL: jdbc:mariadb://mariadb:3306/bigben
+      FLYWAY_SCHEMAS: bigben
 
   redis:
     volumes:
