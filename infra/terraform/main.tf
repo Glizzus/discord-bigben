@@ -52,6 +52,10 @@ resource "digitalocean_droplet" "bigben_vm" {
     digitalocean_volume.mariadb_drive.id,
     digitalocean_volume.redis_drive.id
   ]
+
+  ssh_keys = [
+    digitalocean_ssh_key.default.fingerprint
+  ]
 }
 
 resource "digitalocean_project" "bigben_project" {
@@ -64,6 +68,11 @@ resource "digitalocean_project" "bigben_project" {
     digitalocean_volume.mariadb_drive.urn,
     digitalocean_volume.redis_drive.urn
   ]
+}
+
+resource "digitalocean_ssh_key" "default" {
+  name = "default"
+  public_key = file(pathexpand("~/.ssh/id_rsa.pub"))
 }
 
 resource "local_file" "hosts" {

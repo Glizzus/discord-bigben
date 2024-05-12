@@ -1,4 +1,5 @@
 .env
+.env.prod
 .env*.local
 
 node_modules/
@@ -7,6 +8,8 @@ tsconfig.tsbuildinfo
 
 ci/flyway/sqlfluff/results.json
 
+# Terraform data
 terraform.tfstate*
 *.tfvars
 .terraform
+hosts.ini

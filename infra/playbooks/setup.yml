@@ -2,3 +2,31 @@
   hosts: all
   roles:
     - geerlingguy.docker
+
+  tasks:
+    - name: Git Clone
+      ansible.builtin.git:
+        repo: https://github.com/glizzus/discord-bigben.git
+        dest: /opt/discord-bigben
+        single_branch: true
+        version: main
+      register: git_clone
+
+    - name: Check if .env.prod exists
+      ansible.builtin.stat:
+        path: /opt/discord-bigben/.env.prod
+      register: env_prod
+
+    - name: Copy .env.prod
+      ansible.builtin.copy:
+        src: ../../.env.prod
+        mode: "0600"
+        dest: /opt/discord-bigben
+      register: copy_env
+
+    - name: Run Deploy Script
+      ansible.builtin.command:
+        cmd: /opt/discord-bigben/deploy.sh
+        chdir: /opt/discord-bigben
+      # If .env.prod or the git repo has changed, run the deploy script
+      changed_when: true
