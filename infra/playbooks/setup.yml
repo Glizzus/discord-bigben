@@ -28,5 +28,4 @@
       ansible.builtin.command:
         cmd: /opt/discord-bigben/deploy.sh
         chdir: /opt/discord-bigben
-      # If .env.prod or the git repo has changed, run the deploy script
       changed_when: true

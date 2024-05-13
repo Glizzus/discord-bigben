@@ -11,5 +11,6 @@ ci/flyway/sqlfluff/results.json
 # Terraform data
 terraform.tfstate*
 *.tfvars
+!example.tfvars
 .terraform
 hosts.ini

@@ -1,5 +1,5 @@
 
-## About
+# BigBen Types
 
 `@discord-bigben/types` is a package that contains shared types and interfaces for the `@discord-bigben` packages.
 

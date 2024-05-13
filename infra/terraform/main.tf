@@ -27,7 +27,7 @@ resource "digitalocean_volume" "minio_drive" {
 
 resource "digitalocean_volume" "mariadb_drive" {
   region                  = "nyc3"
-  name                    = "maria-drive"
+  name                    = "mariadb-drive"
   size                    = 5
   description             = "The volume for MariaDB"
   initial_filesystem_type = "xfs"
@@ -75,9 +75,18 @@ resource "digitalocean_ssh_key" "default" {
   public_key = file(pathexpand("~/.ssh/id_rsa.pub"))
 }
 
+locals {
+  drives = replace(join(",", [
+    digitalocean_volume.minio_drive.name,
+    digitalocean_volume.mariadb_drive.name,
+    digitalocean_volume.redis_drive.name
+  ]), "-", "_")
+}
+
 resource "local_file" "hosts" {
   content = templatefile("${path.module}/hosts.ini.tpl", {
-    ip = digitalocean_droplet.bigben_vm.ipv4_address
+    ip = digitalocean_droplet.bigben_vm.ipv4_address,
+    drives = local.drives
   })
   filename = "${path.module}/../playbooks/hosts.ini"
 }

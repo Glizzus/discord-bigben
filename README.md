@@ -4,6 +4,8 @@ A discord bot that plays any noise at a specific cron interval.
 
 ## Bot Permissions
 
+These are the following permissions that Big Ben requires:
+
 | General Permissions | Text Permissions | Voice Permissions |
 | -------------------- | ---------------- | ------------------ |
 |                      | Use Slash Commands | Connect            |
@@ -18,28 +20,28 @@ A discord bot that plays any noise at a specific cron interval.
 
 The bot is split into three services:
 
-- [`campa`](campa/README.md): The orchestrator service, responsible for managing persistent data and scheduling sound crons.
+- [**Campa**](./campa): The orchestrator service, responsible for managing persistent data and scheduling sound crons.
 
-Campa is short for _campanologist_, which is a person who studies and rings bells.
+    Campa is short for _campanologist_, which is a person who studies and rings bells.
 
-- [`chimer`](chimer/README.md): The sound player service, responsible for playing sounds.
+- [**Chimer**](./chimer): The sound player service, responsible for playing sounds.
 
-The reason for splitting the bot into two services is to allow for easy scaling of the sound player service.
+    The reason for splitting the bot into two services is to allow for easy scaling of the sound player service.
 
-This is because the sound player service is the most resource-intensive part of the bot.
+    This is because the sound player service is the most resource-intensive part of the bot.
 
-- [`warehouse`](warehouse/README.md): The audio storage service, responsible for storing and streaming audio files.
+- [**Warehouse**](./warehouse): The data storage service, responsible for storing persistent data.
 
-The warehouse is its own service to allow for easy integration with other services.
+    The reason for splitting the bot into three services is to allow for easy scaling of the data storage service.
 
-By segregating warehouse, no other service needs knowledge of the storage backend.
+    This is because the data storage service is the most resource-intensive part of the bot.
 
 ## Development
 
-### Prerequisites
-
-Because BigBen is three services, we need to run all three. We will use `docker-compose` to do this.
+To quickly get started with development, run the following command:
 
 ```bash
-docker-compose up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.override.yml up --build
 ```
+
+This will start all of the services in development mode.

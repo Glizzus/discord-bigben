@@ -43,30 +43,34 @@ It also abstracts away the storage backend, meaning that other services like **C
 ## API
 
 ### `POST /audio/<audioURL>`
+
 - **Description**: Fetches an audio file from a URL and stores it in the storage backend.
 - **Parameters**:
   - `audioURL`: The path-encoded URL of the audio file to fetch.
 - **Response**:
-    - `200 OK`: The audio file was successfully fetched and stored.
-    - `500 Internal Server Error`: An error occurred while fetching and storing the audio file.
+  - `200 OK`: The audio file was successfully fetched and stored.
+  - `500 Internal Server Error`: An error occurred while fetching and storing the audio file.
 
 ### `GET /audio/<audioURL>`
+
 - **Description**: Streams an audio file from the storage backend.
 - **Parameters**:
   - `audioURL`: The path-encoded URL of the audio file to stream.
 - **Response**:
-    - `200 OK`: The audio file was successfully streamed.
-    - `500 Internal Server Error`: An error occurred while streaming the audio file.
+  - `200 OK`: The audio file was successfully streamed.
+  - `500 Internal Server Error`: An error occurred while streaming the audio file.
 
 ### `DELETE /audio/<audioURL>`
+
 - **Description**: Deletes an audio file from the storage backend.
 - **Parameters**:
   - `audioURL`: The path-encoded URL of the audio file to delete.
 - **Response**:
-    - `200 OK`: The audio file was successfully deleted.
-    - `500 Internal Server Error`: An error occurred while deleting the audio file.
+  - `200 OK`: The audio file was successfully deleted.
+  - `500 Internal Server Error`: An error occurred while deleting the audio file.
 
 ### `GET /health`
+
 - **Description**: Health check endpoint.
 - **Response**:
-    - `200 OK`
+  - `200 OK`

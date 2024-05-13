@@ -1,1 +1,1 @@
-${ip}
+${ip} drives='[${drives}]'
