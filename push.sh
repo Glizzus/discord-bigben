@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # These are the versions of the images we are going to build and push.
 # This script is the source of truth for the versions of the images.

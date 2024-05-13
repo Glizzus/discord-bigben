@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export CAMPA_VERSION=1.0.0
+export CAMPA_VERSION=1.1.0
 export CHIMER_VERSION=1.0.0
 export WAREHOUSE_VERSION=1.0.0
 
