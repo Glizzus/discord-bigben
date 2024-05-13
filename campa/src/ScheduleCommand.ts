@@ -1,6 +1,6 @@
 import * as discord from "discord.js";
 import { type SoundCronService } from "./SoundCronService";
-import { type Command } from "./Command";
+import { WithGuildId, interactionHasServerId, type Command } from "./Command";
 import TrieSearch from "trie-search";
 import { SoundCron } from "./SoundCron";
 
@@ -254,12 +254,4 @@ export class ScheduleCommand implements Command {
       }
     }
   }
-}
-
-type WithGuildId<T> = T & { guildId: string };
-
-function interactionHasServerId<T extends discord.Interaction>(
-  interaction: T,
-): interaction is WithGuildId<T> {
-  return "guildId" in interaction;
 }

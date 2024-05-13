@@ -2,6 +2,7 @@ import {
   type ChatInputCommandInteraction,
   type AutocompleteInteraction,
   type SlashCommandBuilder,
+  type Interaction
 } from "discord.js";
 
 /**
@@ -29,4 +30,12 @@ export interface Command {
    * @returns an empty promise that resolves when the autocomplete is sent
    */
   autocomplete: (interaction: AutocompleteInteraction) => Promise<void>;
+}
+
+export type WithGuildId<T> = T & { guildId: string };
+
+export function interactionHasServerId<T extends Interaction>(
+  interaction: T,
+): interaction is WithGuildId<T> {
+  return "guildId" in interaction;
 }

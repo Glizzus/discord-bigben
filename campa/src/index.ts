@@ -4,6 +4,7 @@ import { logger } from "./logging";
 import { ScheduleCommand } from "./ScheduleCommand";
 import { type Command } from "./Command";
 import * as discordService from "./DiscordService";
+import { HelpCommand } from "./HelpCommand";
 
 function getEnvOrThrow(name: string): string {
   const value = process.env[name];
@@ -36,6 +37,7 @@ async function main(): Promise<void> {
 
   const commands: Record<string, Command> = {
     "schedule": new ScheduleCommand(soundCronService),
+    "help": new HelpCommand()
   };
 
   const discordToken = getEnvOrThrow("CAMPA_DISCORD_TOKEN");
