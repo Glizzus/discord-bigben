@@ -86,24 +86,36 @@ services:
     build: ./warehouse
     container_name: bigben-warehouse
     networks:
-      # Warehouse needs to talk to Campa, Chimer, and MinIO
+      # Warehouse needs to talk to Campa, Chimer, MinIO, and MariaDB
       - bigben-campa-warehouse
       - bigben-chimer-warehouse
       - bigben-warehouse-minio
+      - bigben-warehouse-mariadb
     read_only: true
     environment:
       WAREHOUSE_MINIO_ENDPOINT: minio:9000
       WAREHOUSE_MINIO_ACCESS_KEY: warehouse
       WAREHOUSE_MINIO_SECRET_KEY: warehouse123
       WAREHOUSE_HOST: '0.0.0.0'
+
+      WAREHOUSE_MARIADB_HOST: mariadb
+      WAREHOUSE_MARIADB_DATABASE: warehouse_dev
+      WAREHOUSE_MARIADB_USER: warehouse
+      WAREHOUSE_MARIADB_PASSWORD: warehouse123
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:10002/health"]
       interval: 5s
       timeout: 10s
       retries: 5
     depends_on:
-      - minio
-      - minio-setup
+      minio:
+        condition: service_started
+      mariadb:
+        condition: service_started
+      minio-setup:
+        condition: service_completed_successfully
+      mariadb-setup:
+        condition: service_completed_successfully
 
   redis:
     image: redis:7.2-alpine3.19
@@ -122,9 +134,10 @@ services:
     image: mariadb:11.3.2
     container_name: bigben-mariadb
     networks:
-      # MariaDB only needs to talk to Campa, Flyway, and its setup container
+      # MariaDB only needs to talk to Campa, Flyway, Warehouse, and its setup container
       - bigben-campa-mariadb
       - bigben-flyway-mariadb
+      - bigben-warehouse-mariadb
       - bigben-mariadb-setup-network
     environment:
       MARIADB_ROOT_PASSWORD: root
@@ -151,6 +164,10 @@ services:
 
       FLYWAY_USER: flyway
       FLYWAY_PASSWORD: flyway
+
+      WAREHOUSE_DATABASE: warehouse_dev
+      WAREHOUSE_USER: warehouse
+      WAREHOUSE_PASSWORD: warehouse123
     depends_on:
       - mariadb
 
@@ -187,6 +204,8 @@ networks:
 
   bigben-warehouse-minio:
     name: bigben-warehouse-minio
+  bigben-warehouse-mariadb:
+    name: bigben-warehouse-mariadb
 
   bigben-mariadb-setup-network:
     name: bigben-mariadb-setup-network

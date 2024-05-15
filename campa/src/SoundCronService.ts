@@ -95,7 +95,7 @@ export class SoundCronService {
       }
     }
 
-    const audioEndpoint = `${this.warehouseEndpoint}/audio/${encodeURIComponent(soundCron.audio)}`;
+    const audioEndpoint = `${this.warehouseEndpoint}/soundcron/${serverId}/${encodeURIComponent(soundCron.audio)}`;
     debugLogger(`Uploading audio to warehouse at ${audioEndpoint}`);
     const audioUpload = await fetch(audioEndpoint, {
       method: "POST",
@@ -185,7 +185,7 @@ export class SoundCronService {
     will not pester the user */
     await this.soundCronRepo.removeCron(serverId, name);
 
-    const audioEndpoint = `${this.warehouseEndpoint}/audio/${encodeURIComponent(soundCron.audio)}`;
+    const audioEndpoint = `${this.warehouseEndpoint}/soundcron/${serverId}/${encodeURIComponent(soundCron.audio)}`;
     this.logger.info(`Deleting audio from warehouse at ${audioEndpoint}`);
     const audioDelete = await fetch(audioEndpoint, { method: "DELETE" });
     if (!audioDelete.ok) {

@@ -2,132 +2,51 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/mysql"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/sethvargo/go-envconfig"
 )
 
-// AudioService is an interface that defines the methods for interacting with audio files.
-type AudioService interface {
-	// Fetch downloads an audio file from a URL and stores it in the service.
-	Fetch(ctx context.Context, audioURL string) error
-	// Stream returns a reader for the audio file stored in the service.
-	Stream(ctx context.Context, audioURL string) (*AudioStream, error)
-	// Delete removes the audio file from the service.
-	Delete(ctx context.Context, audioURL string) error
-}
-
-// AudioStream is a struct that represents a stream of audio data.
-type AudioStream struct {
-	// Data is the reader for the audio data.
-	Data io.ReadCloser
-	// ContentLength is the length of the audio data in bytes. If it is not known, it is set to -1.
-	ContentLength string
-	// ContentType is the MIME type of the audio data. If it is not known, it is set to an empty string.
-	ContentType string
-}
-
-// MinioAudioService is an implementation of the AudioService interface that uses Minio as the storage backend.
-type MinioAudioService struct {
-	client *minio.Client
-	bucket string
-}
-
-// NewMinioAudioService creates a new MinioAudioService.
-// This does not initialize the service; in order to do that, you must call Init.
-func NewMinioAudioService(endpoint, accessKey, secretKey, bucket string) (*MinioAudioService, error) {
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: false,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error constructing minio client: %w", err)
-	}
-	return &MinioAudioService{client: client, bucket: bucket}, nil
-}
-
-// Fetch downloads an audio file from a URL and stores it in Minio.
-func (s *MinioAudioService) Fetch(ctx context.Context, audioURL string) error {
-	audioReq, err := http.NewRequestWithContext(ctx, http.MethodGet, audioURL, nil)
-	if err != nil {
-		return fmt.Errorf("error creating request to fetch audio %s: %w", audioURL, err)
-	}
-
-	audioRes, err := http.DefaultClient.Do(audioReq)
-	if err != nil {
-		return fmt.Errorf("error fetching audio %s: %w", audioURL, err)
-	}
-	defer func() {
-		if err = audioRes.Body.Close(); err != nil {
-			slog.Error("error closing response body for audio", "audioURL", audioURL, "error", err)
-		}
-	}()
-
-	// Some nuance here is that if the content length is not known,
-	// it is set to -1. This is also the same convention for uploading
-	// to minio. Therefore, we can just pass this value along.
-	contentLength := audioRes.ContentLength
-
-	// We need to escape the URL to make it safe for use as a key
-	key := url.QueryEscape(audioURL)
-	_, err = s.client.PutObject(ctx, s.bucket, key, audioRes.Body, contentLength, minio.PutObjectOptions{
-		ContentType: audioRes.Header.Get("Content-Type"),
-	})
-	if err != nil {
-		return fmt.Errorf("error storing audio %s in Minio: %w", audioURL, err)
-	}
-	return nil
-}
-
-// Stream returns a reader for the audio file stored in Minio.
-func (s *MinioAudioService) Stream(ctx context.Context, audioURL string) (*AudioStream, error) {
-	key := url.QueryEscape(audioURL)
-	obj, err := s.client.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error getting audio %s from Minio: %w", audioURL, err)
-	}
-
-	stream := &AudioStream{}
-	info, err := obj.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("error doing object stat for audio %s: %w", audioURL, err)
-	}
-
-	stream.Data = obj
-	stream.ContentLength = strconv.FormatInt(info.Size, 10)
-	stream.ContentType = info.ContentType
-	return stream, nil
-}
-
-// Delete removes the audio file from Minio.
-func (s *MinioAudioService) Delete(ctx context.Context, audioURL string) error {
-	key := url.QueryEscape(audioURL)
-	if err := s.client.RemoveObject(ctx, s.bucket, key, minio.RemoveObjectOptions{}); err != nil {
-		return fmt.Errorf("error deleting audio %s from Minio: %w", audioURL, err)
-	}
-	return nil
+type AudioData struct {
+	Body          io.ReadCloser
+	ContentType   string
+	ContentLength int64
 }
 
 // helper function to pull audioURL from request
 // and return an error if it is not present
-func pullAudioURL(w http.ResponseWriter, r *http.Request) string {
-	audioURL := r.PathValue("audioURL")
+func pullPathParams(w http.ResponseWriter, r *http.Request) (guildID int64, audioURL string, err error) {
+	guildIDStr := r.PathValue("guildID")
+	if guildIDStr == "" {
+		http.Error(w, "guildID is required", http.StatusBadRequest)
+		return 0, "", fmt.Errorf("guildID is required")
+	}
+
+	guildID, err = strconv.ParseInt(guildIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid guildID - must be an unsigned int64", http.StatusBadRequest)
+		return 0, "", fmt.Errorf("invalid guildID")
+	}
+
+	audioURL = r.PathValue("audioURL")
 	if audioURL == "" {
 		http.Error(w, "audioURL is required", http.StatusBadRequest)
-		return ""
+		return 0, "", fmt.Errorf("audioURL is required")
 	}
-	return audioURL
+	return guildID, audioURL, nil
 }
 
 // helper function to write plain text OK response
@@ -138,31 +57,33 @@ func returnOK(w http.ResponseWriter) {
 }
 
 // helper function to construct mux with the given audio service
-func constructMux(service AudioService) *http.ServeMux {
+func constructMux(service Service) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		returnOK(w)
 	})
 
-	mux.HandleFunc("POST /audio/{audioURL}", func(w http.ResponseWriter, r *http.Request) {
-		audioURL := pullAudioURL(w, r)
-		if audioURL == "" {
+	mux.HandleFunc("POST /soundcron/{guildID}/{audioURL}", func(w http.ResponseWriter, r *http.Request) {
+		guildID, audioURL, err := pullPathParams(w, r)
+		if err != nil {
 			return
 		}
-		if err := service.Fetch(r.Context(), audioURL); err != nil {
-			slog.Error("error fetching audio", "error", err)
-			http.Error(w, "error fetching audio", http.StatusInternalServerError)
+		if err := service.InsertAudioForServer(r.Context(), audioURL, guildID); err != nil {
+			slog.Error("error inserting audio for server", "error", err)
+			http.Error(w, "error associating server with audio", http.StatusInternalServerError)
 			return
 		}
 		returnOK(w)
 	})
 
-	mux.HandleFunc("GET /audio/{audioURL}", func(w http.ResponseWriter, r *http.Request) {
-		audioURL := pullAudioURL(w, r)
-		if audioURL == "" {
+	mux.HandleFunc("GET /soundcron/{guildID}/{audioURL}", func(w http.ResponseWriter, r *http.Request) {
+		// For now, we don't use the guildID here. It might be good for metrics later.
+		_, audioURL, err := pullPathParams(w, r)
+		if err != nil {
 			return
 		}
-		stream, err := service.Stream(r.Context(), audioURL)
+
+		stream, err := service.StreamAudio(r.Context(), audioURL)
 
 		// In these below operations, we will return a vague error to the client,
 		// but for internal purposes, we need to know whether the error happened
@@ -172,14 +93,14 @@ func constructMux(service AudioService) *http.ServeMux {
 			goto errorOut
 		}
 		defer func() {
-			if err = stream.Data.Close(); err != nil {
+			if err = stream.Body.Close(); err != nil {
 				slog.Error("error closing stream", "error", err)
 			}
 		}()
 
-		w.Header().Set("Content-Length", stream.ContentLength)
+		w.Header().Set("Content-Length", strconv.FormatInt(stream.ContentLength, 10))
 		w.Header().Set("Content-Type", stream.ContentType)
-		_, err = io.Copy(w, stream.Data)
+		_, err = io.Copy(w, stream.Body)
 		if err != nil {
 			slog.Error("error streaming audio to client", "error", err)
 			goto errorOut
@@ -191,19 +112,32 @@ func constructMux(service AudioService) *http.ServeMux {
 		http.Error(w, "error streaming audio", http.StatusInternalServerError)
 	})
 
-	mux.HandleFunc("DELETE /audio/{audioURL}", func(w http.ResponseWriter, r *http.Request) {
-		audioURL := pullAudioURL(w, r)
-		if audioURL == "" {
+	mux.HandleFunc("DELETE /soundcron/{guildID}/{audioURL}", func(w http.ResponseWriter, r *http.Request) {
+		guildID, audioURL, err := pullPathParams(w, r)
+		if err != nil {
 			return
 		}
-		if err := service.Delete(r.Context(), audioURL); err != nil {
-			slog.Error("error deleting audio", "error", err)
-			http.Error(w, "error deleting audio", http.StatusInternalServerError)
+
+		if err := service.RemoveAudioForServer(r.Context(), audioURL, guildID); err != nil {
+			slog.Error("error removing audio for server", "error", err)
+			http.Error(w, "error removing audio for server", http.StatusInternalServerError)
 			return
 		}
 		returnOK(w)
 	})
 	return mux
+}
+
+type MariaDBConfig struct {
+	Host     string `env:"HOST, default=localhost"`
+	Port     string `env:"PORT, default=3306"`
+	User     string `env:"USER, required"`
+	Password string `env:"PASSWORD, required"`
+	Database string `env:"DATABASE, required"`
+}
+
+func (c MariaDBConfig) DSN() string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?multiStatements=true", c.User, c.Password, c.Host, c.Port, c.Database)
 }
 
 type MinioConfig struct {
@@ -214,9 +148,10 @@ type MinioConfig struct {
 }
 
 type Config struct {
-	Minio MinioConfig `env:", prefix=MINIO_"`
-	Host  string      `env:"HOST, default=localhost"`
-	Port  string      `env:"PORT, default=10002"`
+	Minio   MinioConfig   `env:", prefix=MINIO_"`
+	MariaDB MariaDBConfig `env:", prefix=MARIADB_"`
+	Host    string        `env:"HOST, default=localhost"`
+	Port    string        `env:"PORT, default=10002"`
 }
 
 func main() {
@@ -234,7 +169,35 @@ func main() {
 		log.Fatalf("error parsing config: %v", err)
 	}
 
-	service, err := NewMinioAudioService(
+	db, err := sql.Open("mysql", config.MariaDB.DSN())
+	if err != nil {
+		log.Fatalf("error connecting to database: %v", err)
+	}
+	defer db.Close()
+
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	if err != nil {
+		log.Fatalf("error creating migration driver: %v", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file:///migrations",
+		"mysql",
+		driver,
+	)
+	if err != nil {
+		log.Fatalf("error creating migration instance: %v", err)
+	}
+
+	if err := m.Up(); err != nil {
+		if err == migrate.ErrNoChange {
+			slog.Info("no migrations to apply")
+		} else {
+			log.Fatalf("error applying migrations: %v", err)
+		}
+	}
+
+	storage, err := NewMinioAudioStorage(
 		config.Minio.Endpoint,
 		config.Minio.AccessKey,
 		config.Minio.SecretKey,
@@ -242,6 +205,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating minio audio service: %v", err)
 	}
+
+	repo := &MariaDBRepo{DB: db}
+	var oneFiftyMB int64 = 150 * 1024 * 1024
+	service := Service{Repo: repo, Storage: storage, Downloader: &StdLibDownloader{}, ServerStorageLimit: oneFiftyMB}
 
 	mux := constructMux(service)
 	server := &http.Server{

@@ -120,7 +120,7 @@ async function main() {
     logger.info(
       `Found voice channel ${maxChannel.name} with ${maxChannel.members.size} members`,
     );
-    const audioEndpoint = `${warehouseEndpoint}/audio/${encodeURIComponent(audio)}`
+    const audioEndpoint = `${warehouseEndpoint}/soundcron/${serverId}/${encodeURIComponent(audio)}`;
     const { body } = await undici.request(audioEndpoint);
     const resource = discordVoice.createAudioResource(body);
     const connection = discordVoice.joinVoiceChannel({

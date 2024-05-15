@@ -4,7 +4,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
-COPY main.go ./
+COPY *.go ./
 
 ARG BUILD_CACHE=/root/.cache/go-build
 RUN --mount=type=cache,target=${BUILD_CACHE} \
@@ -24,6 +24,8 @@ LABEL org.opencontainers.image.description="The storage service for discord-bigb
 LABEL org.opencontainers.image.revision="${GIT_HASH}"
 
 RUN apk add --no-cache ca-certificates=20240226-r0 curl=8.5.0-r0
+
+COPY migrations ./migrations
 COPY --from=builder /app/warehouse /warehouse
 
 ENTRYPOINT [ "/warehouse" ]

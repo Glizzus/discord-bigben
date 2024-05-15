@@ -18,6 +18,8 @@ services:
       - bigben-minio:/data
   
   warehouse:
+    ports:
+      - 10002:10002
     pull_policy: never
     environment:
       WAREHOUSE_DEBUG: true
