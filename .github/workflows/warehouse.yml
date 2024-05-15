@@ -1,0 +1,35 @@
+name: Warehouse
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - warehouse
+  pull_request:
+    paths:
+      - warehouse
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Because Go binaries don't include test data, we need to test the source.
+      # This means we can't unit test the build image directly.
+      # Since tests are more likely to fail than builds, we run tests first.
+      - name: Test Warehouse
+        run: ci/warehouse/test/test.sh
+
+      - name: Upload Warehouse Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: warehouse-test-results
+          path: ci/warehouse/test/results
+
+      - name: Build Warehouse Image
+        id: build-warehouse-image
+        run: |
+          ci/warehouse/build/build.sh

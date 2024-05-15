@@ -1,0 +1,10 @@
+# This file is used to 
+
+services:
+  warehouse:
+    pull_policy: build
+    build:
+      context: ../../../warehouse
+      target: test
+    volumes:
+      - ./results:/results

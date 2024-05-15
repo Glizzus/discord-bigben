@@ -151,6 +151,13 @@ func TestService_InsertAudioForServer(t *testing.T) {
 			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "qwerty") },
 		},
 		{
+			name: "Downloader.Head returns unknown content type",
+			configure: func() {
+				downloader.head = func() (int64, string, error) { return -1, "", nil }
+			},
+			errorFunc: func(err error) bool { return err != nil },
+		},
+		{
 			name: "Repo.GetServerStorageSize returns error",
 			configure: func() {
 				repo.getServerStorageSizeReturn = func() (int64, error) { return 0, fmt.Errorf("codyrhodes") }
@@ -187,6 +194,11 @@ func TestService_InsertAudioForServer(t *testing.T) {
 			},
 			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "johncena") },
 		},
+		{
+			name: "Everything succeeds",
+			configure: func() {},
+			errorFunc: func(err error) bool { return err == nil },
+		},
 	}
 
 	s := &Service{
@@ -208,6 +220,81 @@ func TestService_InsertAudioForServer(t *testing.T) {
 			repo.reset()
 			storage.reset()
 			downloader.reset()
+		})
+	}
+}
+
+func TestService_RemoveAudioForServer(t *testing.T) {
+	repo := NewMockRepo()
+	storage := NewMockStorage()
+
+	tests := []struct {
+		name      string
+		configure func()
+		errorFunc func(error) bool
+	}{
+		{
+			name: "Repo.RemoveAudioForServer returns error",
+			configure: func() {
+				repo.removeAudioForServer = func() error { return fmt.Errorf("123456") }
+			},
+			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "123456") },
+		},
+		{
+			name: "Repo.AudioHasServers returns error",
+			configure: func() {
+				repo.audioHasServers = func() (bool, error) { return false, fmt.Errorf("qwerty") }
+			},
+			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "qwerty") },
+		},
+		{
+			name: "Repo.AudioHasServers returns true, no error",
+			configure: func() {
+				repo.removeAudio = func() error { return fmt.Errorf("repo.removeAudio should not have been called because the audio is associated with a server") }
+			},
+			errorFunc: func(err error) bool { return err == nil },
+		},
+		{
+			name: "Repo.RemoveAudio returns error",
+			configure: func() {
+				repo.audioHasServers = func() (bool, error) { return false, nil }
+				repo.removeAudio = func() error { return fmt.Errorf("gunther") }
+			},
+			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "gunther") },
+		},
+		{
+			name: "Storage.Delete returns error",
+			configure: func() {
+				repo.audioHasServers = func() (bool, error) { return false, nil }
+				storage.delete = func() error { return fmt.Errorf("tripleh") }
+			},
+			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "tripleh") },
+		},
+		{
+			name: "Repo.AudioHasServers returns false and everything succeeds",
+			configure: func() {
+				repo.audioHasServers = func() (bool, error) { return false, nil }
+			},
+			errorFunc: func(err error) bool { return err == nil },
+		},
+	}
+
+	s := &Service{
+		Repo:    repo,
+		Storage: storage,
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.configure()
+
+			err := s.RemoveAudioForServer(context.Background(), "audioURL", 1)
+			if !test.errorFunc(err) {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			repo.reset()
+			storage.reset()
 		})
 	}
 }

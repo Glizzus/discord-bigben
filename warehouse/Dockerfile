@@ -13,6 +13,19 @@ RUN --mount=type=cache,target=${BUILD_CACHE} \
     GOOS=linux \
     go build -ldflags="-s -w" -a -installsuffix cgo -o warehouse .
 
+FROM golang:1.22.2-alpine3.19 AS test
+
+RUN mkdir /results
+
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN --mount=type=bind, \
+    go mod download && go mod verify
+
+COPY *.go ./
+
+ENTRYPOINT [ "sh", "-c", "go test -v -coverprofile=./cover.out ./... > /results/test_results.out && go tool cover -html=./cover.out -o /results/cover.html" ]
+
 # We use alpine instead of scratch because we want to healthcheck the service port,
 # and trying to get curl onto a scratch image is a pain.
 FROM alpine:3.19.1

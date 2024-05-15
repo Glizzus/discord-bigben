@@ -7,6 +7,7 @@ dist/
 tsconfig.tsbuildinfo
 
 ci/flyway/sqlfluff/results.json
+ci/warehouse/test/results/
 
 # Terraform data
 terraform.tfstate*

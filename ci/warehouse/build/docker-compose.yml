@@ -1,0 +1,8 @@
+services:
+  warehouse:
+    image: ghcr.io/glizzus/bigben/warehouse:build-${DATE}
+    build:
+      context: ../../../warehouse
+      args:
+        BUILD_TIME: ${DATE}
+        GIT_HASH: ${GIT_HASH}
