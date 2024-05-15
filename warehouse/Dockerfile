@@ -19,8 +19,7 @@ RUN mkdir /results
 
 WORKDIR /app
 COPY go.mod go.sum ./
-RUN --mount=type=bind, \
-    go mod download && go mod verify
+RUN go mod download && go mod verify
 
 COPY *.go ./
 

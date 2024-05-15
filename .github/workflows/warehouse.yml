@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - warehouse
+      - warehouse/**
   pull_request:
     paths:
-      - warehouse
+      - warehouse/**
   workflow_dispatch:
 
 jobs:
