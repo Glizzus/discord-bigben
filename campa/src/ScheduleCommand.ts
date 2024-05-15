@@ -133,8 +133,6 @@ export class ScheduleCommand implements Command {
         await interaction.reply("Invalid cron expression");
         return;
       // We don't tell the user about these errors because they are internal
-      case "DatabaseError":
-      case "QueueError":
       default:
         await interaction.reply("An error occurred");
         return;

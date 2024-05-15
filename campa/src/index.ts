@@ -5,6 +5,8 @@ import { ScheduleCommand } from "./ScheduleCommand";
 import { type Command } from "./Command";
 import * as discordService from "./DiscordService";
 import { HelpCommand } from "./HelpCommand";
+import { HttpWarehouseClient } from "./HttpWarehouseClient";
+import { BullMqJobQueue } from "./BullMqJobQueue";
 
 function getEnvOrThrow(name: string): string {
   const value = process.env[name];
@@ -20,18 +22,20 @@ function getEnvOrDefault(name: string, defaultValue: string): string {
 
 async function main(): Promise<void> {
 
-  const redisPort = getEnvOrDefault("CAMPA_REDIS_PORT", "6379");
-  const redisHost = getEnvOrThrow("CAMPA_REDIS_HOST");
-
   const mariadbUri = getEnvOrThrow("CAMPA_MARIADB_URI");
   const soundCronRepo = new MariaDbSoundCronRepo(mariadbUri);
 
+  const redisPort = getEnvOrDefault("CAMPA_REDIS_PORT", "6379");
+  const redisHost = getEnvOrThrow("CAMPA_REDIS_HOST");
+  const jobQueue = new BullMqJobQueue(redisHost, parseInt(redisPort));
+
   const warehouseEndpoint = getEnvOrThrow("CAMPA_WAREHOUSE_ENDPOINT");
+  const warehouseClient = new HttpWarehouseClient(warehouseEndpoint);
+
   const soundCronService = new SoundCronService(
     soundCronRepo,
-    warehouseEndpoint,
-    redisHost,
-    parseInt(redisPort, 10),
+    warehouseClient,
+    jobQueue,
     logger,
   );
 

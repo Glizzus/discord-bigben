@@ -60,13 +60,6 @@ export interface SoundCronRepo {
    * @returns a promise that resolves with an array of soundcrons for the server
    */
   listCrons: (serverId: string) => Promise<SoundCron[]>;
-
-  /**
-   * Lists all of the soundCrons for all servers.
-   * This is often used for startup to load all of the soundCrons.
-   * @returns a promise that resolves with a record of server IDs to soundcrons
-   */
-  listAllCrons: () => Promise<Record<string, SoundCron[]>>;
 }
 
 /**
@@ -130,14 +123,8 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
   }
 
   async removeCron(serverId: string, name: string): Promise<void> {
-    const conn = await this.pool.getConnection();
-    try {
-      debugLogger(`Removing soundCron ${serverId}:${name}`);
-      const query = "DELETE FROM soundcrons WHERE server_id = ? AND soundcron_name = ?";
-      await conn.query(query, [serverId, name]);
-    } finally {
-      await conn.release();
-    }
+    const query = "DELETE FROM soundcrons WHERE server_id = ? AND soundcron_name = ?";
+    await this.pool.query(query, [serverId, name]);
   }
 
   async listCrons(serverId: string): Promise<SoundCron[]> {
@@ -180,48 +167,5 @@ export class MariaDbSoundCronRepo implements SoundCronRepo {
     } finally {
       await conn.release();
     }
-  }
-
-  async listAllCrons(): Promise<Record<string, SoundCron[]>> {
-    const conn = await this.pool.getConnection();
-    try {
-      const query = `
-        SELECT server_id, soundcron_name, cron, audio, mute, soundcron_description,
-        GROUP_CONCAT(ec.channel_id) AS exclude_channels 
-        FROM soundcrons sc
-        LEFT JOIN excluded_channels ec ON sc.soundcron_id = ec.soundcron_id
-        GROUP BY sc.soundcron_id`;
-
-      type WithServerId<T> = T & { server_id: string };
-      const rows =
-        await conn.query<Array<WithServerId<GroupedSoundCronRow>>>(query);
-      const result: Record<string, SoundCron[]> = {};
-      for (const row of rows) {
-        // We will just cast here. If an invalid serverId made it into the database, we have bigger problems.
-        const serverId = row.server_id;
-        if (result[serverId] === undefined) {
-          result[serverId] = [];
-        }
-        result[serverId].push(groupedRowToSoundCron(row));
-      }
-      return result;
-    } finally {
-      await conn.release();
-    }
-  }
-}
-
-export class SoundCronServiceError extends Error {
-  constructor(
-    message: string,
-    public innerError?: Error,
-  ) {
-    super(message);
-    this.name = "SoundCronServiceError";
-    // This `captureStackTrace` method is only available in V8, which is fine since we're using Node.js.
-    if (Error.captureStackTrace !== undefined) {
-      Error.captureStackTrace(this, SoundCronServiceError);
-    }
-    this.innerError = innerError;
   }
 }

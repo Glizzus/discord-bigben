@@ -51,9 +51,9 @@ func (s *StdLibDownloader) Get(ctx context.Context, url string) (io.ReadCloser, 
 }
 
 type Service struct {
-	Downloader         Downloader
-	Repo               Repo
-	Storage            AudioStorage
+	Downloader Downloader
+	Repo    Repo
+	Storage AudioStorage
 	ServerStorageLimit int64
 }
 
@@ -148,8 +148,8 @@ func (s *Service) InsertAudioForServer(ctx context.Context, audioURL string, ser
 	}
 
 	data := AudioData{
-		Body:          body,
-		ContentType:   contentType,
+		Body:        body,
+		ContentType: contentType,
 		ContentLength: audioSize,
 	}
 
