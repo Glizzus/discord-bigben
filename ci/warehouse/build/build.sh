@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")"
 
 date="$(date -u "+%Y-%m-%dT%H-%M-%SZ")"
-export BUILD_DATE="$date"
+export DATE="$date"
 
 git_hash="$(git rev-parse HEAD)"
 export GIT_HASH="$git_hash"
