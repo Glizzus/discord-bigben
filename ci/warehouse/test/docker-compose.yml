@@ -3,6 +3,7 @@
 services:
   warehouse:
     pull_policy: build
+    container_name: warehouse-unit-test
     build:
       context: ../../../warehouse
       target: test

@@ -1,9 +1,10 @@
 services:
   campa:
     pull_policy: build
+    container_name: campa-unit-test
     build:
       context: ../../../campa
       target: test
     volumes:
-      - ./results/mochawesome-report:/usr/src/app/results/mochawesome-report
+      - ./results/mochawesome-report:/usr/src/app/mochawesome-report
       - ./results/coverage:/usr/src/app/coverage
