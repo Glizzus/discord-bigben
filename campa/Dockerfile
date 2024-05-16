@@ -1,14 +1,28 @@
-FROM node:22.1.0-alpine3.18 AS build
+FROM node:22.1.0-alpine3.18 AS base
 
 WORKDIR /usr/src/app
 
-# Run this early for caching
+
+FROM base AS dependencies
+
 COPY package*.json ./
 RUN npm ci
 
 COPY tsconfig.json ./
+COPY .mocharc.json ./
 COPY src ./src
+COPY test ./test
+
+
+FROM dependencies AS build
+
 RUN npm run build
+
+
+FROM dependencies AS test
+
+ENTRYPOINT [ "npm", "run", "test:unit" ]
+
 
 FROM node:22.1.0-alpine3.18
 

@@ -1,24 +1,16 @@
-name: Test, Build and Push Campa Image
+name: Campa
 
 on:
   push:
     paths:
       - campa/**
-      - '!campa/README.md'
-      - '!campa/LICENSE'
-
       - types/**
-      - '!types/README.md'
-      - '!types/LICENSE'
+  branches:
+    - main
   pull_request:
     paths:
       - campa/**
-      - '!campa/README.md'
-      - '!campa/LICENSE'
-
       - types/**
-      - '!types/README.md'
-      - '!types/LICENSE'
   workflow_dispatch:
 
 jobs:
@@ -27,21 +19,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Test Campa
+        run: ci/campa/test/test.sh
+
+      - name: Upload Campa Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: campa-test-results
+          path: ci/campa/test/results
+
       - name: Build campa
         id: build-campa-image
         run: |
           image=$(ci/campa/build/build.sh)
           echo "Built campa image: $image"
-          echo "image_name=$image" >> $GITHUB_OUTPUT
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push Campa Image
-        run: |
-          release_image=$(ci/campa/push.sh ${{ steps.build-campa-image.outputs.image_name }})
-          echo "Pushed Campa image: $release_image"

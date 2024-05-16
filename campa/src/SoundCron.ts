@@ -2,8 +2,8 @@ export interface SoundCronOptions {
   name: string;
   cron: string;
   audio: string;
+  timezone: string;
 
-  timezone?: string;
   excludeChannels?: string[];
   mute?: boolean;
   description?: string;
@@ -13,15 +13,9 @@ export class SoundCron {
   name: string;
   cron: string;
   audio: string;
-
-  /**
-   * The timezone that the cron expression follows.
-   * @see 
-   * @default "Etc/UTC"
-   */
-  timezone = "Etc/UTC"
-  excludeChannels: string[] = [];
-  mute = false;
+  timezone: string;
+  excludeChannels: string[];
+  mute: boolean;
 
   description?: string;
 
@@ -29,12 +23,10 @@ export class SoundCron {
     this.name = options.name;
     this.cron = options.cron;
     this.audio = options.audio;
-    if (options.excludeChannels) {
-      this.excludeChannels = options.excludeChannels;
-    }
-    if (options.mute) {
-      this.mute = options.mute;
-    }
+    this.timezone = options.timezone;
+
+    this.mute = options.mute ?? false;
+    this.excludeChannels = options.excludeChannels ?? [];
 
     this.description = options.description;
   }

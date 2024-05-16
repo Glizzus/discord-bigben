@@ -1,0 +1,9 @@
+services:
+  campa:
+    pull_policy: build
+    build:
+      context: ../../../campa
+      target: test
+    volumes:
+      - ./results/mochawesome-report:/usr/src/app/results/mochawesome-report
+      - ./results/coverage:/usr/src/app/coverage

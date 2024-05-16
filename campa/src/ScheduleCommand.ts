@@ -31,6 +31,15 @@ export class ScheduleCommand implements Command {
           opt
             .setName("cron")
             .setDescription("Cron expression")
+            .setRequired(true)
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName("timezone")
+            .setDescription("The timezone that the sound will play at")
+            /* This autocomplete requires a bit of finesse because there are
+            hundreds of timezones */
+            .setAutocomplete(true)
             .setRequired(true),
         )
         /* The following two are mutually exclusive, but the builder
@@ -43,14 +52,6 @@ export class ScheduleCommand implements Command {
         )
         .addBooleanOption((opt) =>
           opt.setName("mute").setDescription("Mute the bot"),
-        )
-        .addStringOption((opt) =>
-          opt
-            .setName("timezone")
-            .setDescription("The timezone that the sound will play at")
-            /* This autocomplete requires a bit of finesse because there are
-            hundreds of timezones */
-            .setAutocomplete(true),
         )
         .addStringOption((opt) =>
           opt
@@ -91,9 +92,9 @@ export class ScheduleCommand implements Command {
   ): Promise<void> {
     const name = interaction.options.getString("name", true);
     const cron = interaction.options.getString("cron", true);
+    const timezone = interaction.options.getString("timezone", true);
     const audioUrl = interaction.options.getString("audio_url");
     const audioFile = interaction.options.getAttachment("audio_file");
-    const timezone = interaction.options.getString("timezone") ?? undefined;
 
     const audio = await (async () => {
       if (audioUrl !== null && audioFile !== null) {

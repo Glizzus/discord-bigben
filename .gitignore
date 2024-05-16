@@ -6,6 +6,11 @@ node_modules/
 dist/
 tsconfig.tsbuildinfo
 
+campa/.nyc_output/
+campa/coverage/
+campa/mochawesome-report/
+
+ci/campa/test/results/
 ci/flyway/sqlfluff/results.json
 ci/warehouse/test/results/
 
