@@ -2,11 +2,11 @@ name: Campa
 
 on:
   push:
+    branches:
+      - main
     paths:
       - campa/**
       - types/**
-  branches:
-    - main
   pull_request:
     paths:
       - campa/**
