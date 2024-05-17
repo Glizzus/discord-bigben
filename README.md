@@ -20,21 +20,31 @@ These are the following permissions that Big Ben requires:
 
 The bot is split into three services:
 
-- [**Campa**](./campa): The orchestrator service, responsible for managing persistent data and scheduling sound crons.
+- [**Campa**](./campa): The orchestrator service.
 
     Campa is short for _campanologist_, which is a person who studies and rings bells.
 
+    This reflects it's role as the orchestrator of the bot.
+
+    Duties:
+        - Persisting SoundCrons (in MariaDB)
+        - Scheduling SoundCrons (via BullMQ)
+        - Discord Slash Command Handling (via Discord.js)
+
 - [**Chimer**](./chimer): The sound player service, responsible for playing sounds.
 
-    The reason for splitting the bot into two services is to allow for easy scaling of the sound player service.
+    This service is designed to be stateless and small. This makes it easy to horizontally scale.
 
-    This is because the sound player service is the most resource-intensive part of the bot.
+    Duties:
+        - Playing sounds at a specific time (via BullMQ)
 
-- [**Warehouse**](./warehouse): The data storage service, responsible for storing persistent data.
+- [**Warehouse**](./warehouse): The data storage service, responsible for storing audio files.
 
-    The reason for splitting the bot into three services is to allow for easy scaling of the data storage service.
-
-    This is because the data storage service is the most resource-intensive part of the bot.
+    Duties:
+        - Downloading audio files from URLs
+        - Storing audio files (in Minio)
+        - Streaming audio files to Chimer
+        - Enforcing storage limits per guild (via MariaDB)
 
 ## Development
 

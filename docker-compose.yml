@@ -172,7 +172,7 @@ services:
 
   flyway:
     image: ghcr.io/glizzus/bigben/flyway:${FLYWAY_VERSION:-latest}
-    build: ./migrations
+    build: ./campa/migrations
     container_name: bigben-flyway
     networks:
       # Flyway only needs to talk to MariaDB

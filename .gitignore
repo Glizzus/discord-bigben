@@ -11,8 +11,10 @@ campa/coverage/
 campa/mochawesome-report/
 
 ci/campa/test/results/
-ci/flyway/sqlfluff/results.json
+ci/campa/sqlfluff/results
+
 ci/warehouse/test/results/
+ci/warehouse/sqlfluff/results
 
 # Terraform data
 terraform.tfstate*

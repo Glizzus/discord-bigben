@@ -30,11 +30,27 @@ It also abstracts away the storage backend, meaning that other services like **C
 
 ## Configuration
 
+## Minio Storage Backend
+
 - `WAREHOUSE_MINIO_ENDPOINT`: The endpoint of the Minio storage backend.
 
 - `WAREHOUSE_MINIO_ACCESS_KEY`: The access key for the Minio storage backend.
 
 - `WAREHOUSE_MINIO_SECRET_KEY`: The secret key for the Minio storage backend.`
+
+## MariaDB Database
+
+- `WAREHOUSE_MARIADB_HOST`: The host of the MariaDB database.
+
+- `WAREHOUSE_MARIADB_PORT`: The port of the MariaDB database.
+
+- `WAREHOUSE_MARIADB_USER`: The user of the MariaDB database.
+
+- `WAREHOUSE_MARIADB_PASSWORD`: The password of the MariaDB database.
+
+- `WAREHOUSE_MARIADB_DATABASE`: The name of the MariaDB database.
+
+## Server
 
 - `WAREHOUSE_PORT`: (Optional) The port on which the Warehouse service should listen. Defaults to `10002`.
 
@@ -96,6 +112,8 @@ It also abstracts away the storage backend, meaning that other services like **C
   - `audioURL`: The path-encoded URL of the audio file to delete.
 - **Response**:
   - `200 OK`: The audio file was successfully deleted.
+    - Content-Type: `text/plain`
+    - Body: `OK`
   - `500 Internal Server Error`: An error occurred while deleting the audio file.
 
 ### `GET /health`
@@ -103,3 +121,5 @@ It also abstracts away the storage backend, meaning that other services like **C
 - **Description**: Health check endpoint.
 - **Response**:
   - `200 OK`
+    - Content-Type: `text/plain`
+    - Body: `OK`

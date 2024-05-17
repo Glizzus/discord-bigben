@@ -1,0 +1,27 @@
+name: Campa Migrations
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - campa/migrations/**
+  pull_request:
+    paths:
+      - campa/migrations/**
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run sqlfluff
+        run: ci/campa/sqlfluff/lint.sh
+
+      - name: Upload Campa Migrations Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: campa-migrations-test-results
+          path: ci/campa/sqlfluff/results

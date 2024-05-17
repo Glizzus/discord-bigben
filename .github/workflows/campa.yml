@@ -6,10 +6,12 @@ on:
       - main
     paths:
       - campa/**
+      - '!campa/migrations/**'
       - types/**
   pull_request:
     paths:
       - campa/**
+      - '!campa/migrations/**'
       - types/**
   workflow_dispatch:
 

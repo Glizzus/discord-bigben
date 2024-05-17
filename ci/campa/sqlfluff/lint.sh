@@ -2,5 +2,6 @@
 set -e
 
 cd "$(dirname "$0")"
-export USER="$(id -u):$(id -g)"
+export UID="$(id -u)"
+export GID="$(id -g)"
 docker compose up --no-color --quiet-pull

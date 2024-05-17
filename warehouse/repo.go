@@ -176,7 +176,7 @@ func (m *MariaDBRepo) InsertAudioForServer(ctx context.Context, audioURL string,
 	}
 
 	const insertAudioQuery = `
-	INSERT INTO audio (url, size)
+	INSERT INTO audio (url, file_size)
 	VALUES (?, ?)
 	ON DUPLICATE KEY UPDATE url = url
 	`
@@ -227,7 +227,7 @@ func (m *MariaDBRepo) AudioHasServers(ctx context.Context, audioURL string) (boo
 
 func (m *MariaDBRepo) GetAudioSize(ctx context.Context, audioURL string) (int64, error) {
 	const query = `
-	SELECT size
+	SELECT file_size AS size
 	FROM audio
 	WHERE url = ?
 	`
@@ -268,7 +268,7 @@ func (m *MariaDBRepo) RemoveAudio(ctx context.Context, audioURL string) error {
 
 func (m *MariaDBRepo) GetServerStorageSize(ctx context.Context, serverID int64) (int64, error) {
 	const query = `
-	SELECT COALESCE(SUM(audio.size), 0)
+	SELECT COALESCE(SUM(audio.file_size), 0)
 	FROM audio
 	JOIN server_audio ON audio.id = server_audio.audio_id
 	WHERE server_audio.server_id = ?

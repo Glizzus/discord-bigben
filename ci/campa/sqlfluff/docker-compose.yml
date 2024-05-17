@@ -1,0 +1,16 @@
+services:
+  sqlfluff:
+    image: sqlfluff/sqlfluff:3.0.6
+    user: ${UID}:${GID}
+    command:
+      - lint
+      - /sql
+      - --dialect
+      - mysql
+      - --write-output
+      - /results/results.out
+      - --disable-progress-bar
+      - --nocolor
+    volumes:
+      - ../../../campa/migrations/flyway/sql:/sql:ro
+      - ./results:/results

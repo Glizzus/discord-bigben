@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "convict": "^6.2.4",
-    "convict-format-with-validator": "^6.2.0"
-  },
-  "devDependencies": {
-    "@types/convict": "^6.1.6"
-  }
-}

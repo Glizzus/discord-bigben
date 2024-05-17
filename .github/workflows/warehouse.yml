@@ -6,9 +6,11 @@ on:
       - main
     paths:
       - warehouse/**
+      - '!warehouse/migrations/**'
   pull_request:
     paths:
       - warehouse/**
+      - '!warehouse/migrations/**'
   workflow_dispatch:
 
 jobs:
