@@ -4,7 +4,6 @@
 # For example, docker-compose.prod.override.yml is used to override configurations for the production environment.
 # docker-compose.dev.override.yml is used to override configurations for the development environment.
 
-
 services:
   campa:
     image: ghcr.io/glizzus/bigben/campa:${CAMPA_VERSION:-latest}
@@ -215,4 +214,3 @@ networks:
 
   bigben-flyway-mariadb:
     name: bigben-flyway-mariadb
-  

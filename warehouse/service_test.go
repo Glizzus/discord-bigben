@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -165,13 +166,23 @@ func TestService_InsertAudioForServer(t *testing.T) {
 			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "codyrhodes") },
 		},
 		{
-			name: "Repo.GetServerStorageSize + Downloader.Head > ServerStorageLimit returns error",
+			name: "Repo.GetServerStorageSize + Downloader.Head > ServerStorageLimit returns ErrNotEnoughStorage",
 			configure: func() {
 				repo.getServerStorageSizeReturn = func() (int64, error) { return 150, nil }
 				downloader.head = func() (int64, string, error) { return 200, "application/json", nil }
 			},
-			// TODO: This should have it's own error type because it is user-facing
-			errorFunc: func(err error) bool { return err != nil },
+			errorFunc: func(err error) bool {
+				var actualErr ErrNotEnoughStorage
+				if !errors.As(err, &actualErr) {
+					t.Logf("expected ErrNotEnoughStorage, got %T", err)
+					return false
+				}
+				if actualErr.Available != 150 || actualErr.Required != 200 {
+					t.Logf("expected ErrNotEnoughStorage{Available: 150, Required: 200}, got %v", actualErr)
+					return false
+				}
+				return true
+			},
 		},
 		{
 			name: "Downloader.Get returns error",
@@ -195,7 +206,7 @@ func TestService_InsertAudioForServer(t *testing.T) {
 			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "johncena") },
 		},
 		{
-			name: "Everything succeeds",
+			name:      "Everything succeeds",
 			configure: func() {},
 			errorFunc: func(err error) bool { return err == nil },
 		},
@@ -250,7 +261,9 @@ func TestService_RemoveAudioForServer(t *testing.T) {
 		{
 			name: "Repo.AudioHasServers returns true, no error",
 			configure: func() {
-				repo.removeAudio = func() error { return fmt.Errorf("repo.removeAudio should not have been called because the audio is associated with a server") }
+				repo.removeAudio = func() error {
+					return fmt.Errorf("repo.removeAudio should not have been called because the audio is associated with a server")
+				}
 			},
 			errorFunc: func(err error) bool { return err == nil },
 		},
