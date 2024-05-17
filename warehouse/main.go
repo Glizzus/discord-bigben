@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -20,14 +22,23 @@ import (
 	"github.com/sethvargo/go-envconfig"
 )
 
+// AudioData is a struct that holds the data for an audio file.
+// It encapsulates the data that we care about for the application.
 type AudioData struct {
-	Body          io.ReadCloser
-	ContentType   string
+	// Body is the reader for the audio file.
+	// These are the actual bytes.
+	Body io.ReadCloser
+
+	// ContentLength is the size of the audio file in bytes.
 	ContentLength int64
+
+	// ContentType is the MIME type of the audio file.
+	// This is not necessary, but is nice to have.
+	ContentType string
 }
 
-// helper function to pull audioURL from request
-// and return an error if it is not present
+// helper function to pull and validate path parameters from a request.
+// it will perform HTTP error responses, and return wrapped errors.
 func pullPathParams(w http.ResponseWriter, r *http.Request) (guildID int64, audioURL string, err error) {
 	guildIDStr := r.PathValue("guildID")
 	if guildIDStr == "" {
@@ -56,6 +67,15 @@ func returnOK(w http.ResponseWriter) {
 	}
 }
 
+type notEnoughStorageResponse struct {
+	Available int64 `json:"available"`
+	Required  int64 `json:"required"`
+}
+
+type insertAudioSuccessResponse struct {
+	RemainingStorage int64 `json:"remainingStorage"`
+}
+
 // helper function to construct mux with the given audio service
 func constructMux(service Service) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -68,12 +88,35 @@ func constructMux(service Service) *http.ServeMux {
 		if err != nil {
 			return
 		}
-		if err := service.InsertAudioForServer(r.Context(), audioURL, guildID); err != nil {
+
+		insertResult, err := service.InsertAudioForServer(r.Context(), audioURL, guildID)
+		if err != nil {
+			notEnoughStorageErr := &ErrNotEnoughStorage{}
+			if errors.As(err, notEnoughStorageErr) {
+				body := notEnoughStorageResponse{
+					Available: notEnoughStorageErr.Available,
+					Required:  notEnoughStorageErr.Required,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInsufficientStorage)
+				if err := json.NewEncoder(w).Encode(body); err != nil {
+					slog.Error("error encoding response", "error", err)
+				}
+				return
+			}
+
+			// At this point, this is an internal server error
 			slog.Error("error inserting audio for server", "error", err)
 			http.Error(w, "error associating server with audio", http.StatusInternalServerError)
 			return
 		}
-		returnOK(w)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		body := insertAudioSuccessResponse{RemainingStorage: insertResult.RemainingStorage}
+		if err := json.NewEncoder(w).Encode(body); err != nil {
+			slog.Error("error encoding response", "error", err)
+		}
 	})
 
 	mux.HandleFunc("GET /soundcron/{guildID}/{audioURL}", func(w http.ResponseWriter, r *http.Request) {

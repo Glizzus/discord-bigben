@@ -49,8 +49,34 @@ It also abstracts away the storage backend, meaning that other services like **C
   - `guildID`: The ID of the guild to which the audio file belongs.
   - `audioURL`: The path-encoded URL of the audio file to fetch.
 - **Response**:
-  - `200 OK`: The audio file was successfully fetched and stored.
+  - `201 Created`: The audio file was successfully fetched and stored.
+    - Content-Type: `application/json`
+    - Body:
+
+      ```json
+      {
+        "remainingStorage": <remaining storage in bytes>
+      }
+      ```
+
+  - `400 Bad Request`: The request had invalid parameters.
+    - Content-Type: `text/plain`
+    - Body: The error message.
+
   - `500 Internal Server Error`: An error occurred while fetching and storing the audio file.
+    - Content-Type: `text/plain`
+    - Body: The error message.
+
+  - `507 Insufficient Storage`: The storage backend does not have enough space to store the audio file.
+    - Content-Type: `application/json`
+    - Body:
+
+      ```json
+      {
+        "available": <available space in bytes>,
+        "required": <required space in bytes>
+      }
+      ```
 
 ### `GET /soundcron/<guildID>/<audioURL>`
 

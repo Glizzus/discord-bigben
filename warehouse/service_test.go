@@ -16,6 +16,7 @@ type mockRepo struct {
 	insertAudioForServer func() error
 	audioHasServers      func() (bool, error)
 
+	getAudioSize               func() (int64, error)
 	removeAudio                func() error
 	getServerStorageSizeReturn func() (int64, error)
 }
@@ -42,6 +43,10 @@ func (m *mockRepo) AudioHasServers(ctx context.Context, audioURL string) (bool, 
 	return m.audioHasServers()
 }
 
+func (m *mockRepo) GetAudioSize(ctx context.Context, audioURL string) (int64, error) {
+	return m.getAudioSize()
+}
+
 func (m *mockRepo) RemoveAudio(ctx context.Context, audioURL string) error {
 	return m.removeAudio()
 }
@@ -57,6 +62,7 @@ func (m *mockRepo) reset() {
 	m.insertAudioForServer = func() error { return nil }
 	m.audioHasServers = func() (bool, error) { return true, nil }
 
+	m.getAudioSize = func() (int64, error) { return 0, ErrAudioNotFound{URL: "audioURL"} }
 	m.removeAudio = func() error { return nil }
 	m.getServerStorageSizeReturn = func() (int64, error) { return 1, nil }
 }
@@ -121,57 +127,109 @@ func (m *mockDownloader) reset() {
 }
 
 func TestService_InsertAudioForServer(t *testing.T) {
+
+	const serverStorageLimit = 300
+
 	repo := NewMockRepo()
 	storage := NewMockStorage()
 	downloader := NewMockDownloader()
 
 	tests := []struct {
-		name      string
-		configure func()
-		errorFunc func(error) bool
+		name         string
+		configure    func()
+		validateFunc func(*InsertAudioResult, error) bool
 	}{
 		{
-			name: "Repo.AssociateServerWithAudio succeeds",
+			name: "unknown error when checking if audio initially exists",
 			configure: func() {
+				repo.getAudioSize = func() (int64, error) { return 0, fmt.Errorf("8675309") }
+			},
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return strings.Contains(err.Error(), "8675309")
+			},
+		},
+		{
+			name: "audio initially exists, but error when checking if server has enough storage",
+			configure: func() {
+				repo.getAudioSize = func() (int64, error) { return 150, nil }
+				repo.getServerStorageSizeReturn = func() (int64, error) { return 0, fmt.Errorf("dvorak") }
+			},
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return strings.Contains(err.Error(), "dvorak")
+			},
+		},
+		{
+			name: "audio initially exists, but server does not have enough storage",
+			configure: func() {
+				repo.getAudioSize = func() (int64, error) { return 150, nil }
+				repo.getServerStorageSizeReturn = func() (int64, error) { return 200, nil }
+			},
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				var actualErr ErrNotEnoughStorage
+				if !errors.As(err, &actualErr) {
+					t.Logf("expected ErrNotEnoughStorage, got %T", err)
+					return false
+				}
+				if actualErr.Available != 200 || actualErr.Required != 150 {
+					t.Logf("expected ErrNotEnoughStorage{Available: 200, Required: 150}, got %v", actualErr)
+					return false
+				}
+				return true
+			},
+		},
+		{
+			name: "audio initially exists, server has enough storage, but unknown error making the association",
+			configure: func() {
+				repo.getAudioSize = func() (int64, error) { return 150, nil }
+				repo.getServerStorageSizeReturn = func() (int64, error) { return 150, nil }
+				repo.associateServerWithAudio = func() error { return fmt.Errorf("dogmeat") }
+			},
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return strings.Contains(err.Error(), "dogmeat")
+			},
+		},
+		{
+			name: "audio initially exists, server has enough storage, everything succeeds",
+			configure: func() {
+				repo.getAudioSize = func() (int64, error) { return 150, nil }
 				repo.associateServerWithAudio = func() error { return nil }
+				repo.getServerStorageSizeReturn = func() (int64, error) { return 5, nil }
+				downloader.head = func() (int64, string, error) {
+					t.Errorf("head should not have been called because the audio already exists")
+					return 0, "", nil
+				}
 			},
-			errorFunc: func(err error) bool { return err == nil },
-		},
-		{
-			name: "Repo.AssociateServerWithAudio returns unknown error",
-			configure: func() {
-				repo.associateServerWithAudio = func() error { return fmt.Errorf("123456") }
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return result.RemainingStorage == 145 && err == nil
 			},
-			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "123456") },
 		},
+
 		{
-			name: "Downloader.Head returns error",
+			name: "audio does not initially exist, error when getting audio size",
 			configure: func() {
 				downloader.head = func() (int64, string, error) { return 0, "", fmt.Errorf("qwerty") }
 			},
-			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "qwerty") },
-		},
-		{
-			name: "Downloader.Head returns unknown content type",
-			configure: func() {
-				downloader.head = func() (int64, string, error) { return -1, "", nil }
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return strings.Contains(err.Error(), "qwerty")
 			},
-			errorFunc: func(err error) bool { return err != nil },
 		},
 		{
-			name: "Repo.GetServerStorageSize returns error",
+			name: "audio does not initially exist, error when getting server storage size",
 			configure: func() {
-				repo.getServerStorageSizeReturn = func() (int64, error) { return 0, fmt.Errorf("codyrhodes") }
+				downloader.head = func() (int64, string, error) { return 150, "application/json", nil }
+				repo.getServerStorageSizeReturn = func() (int64, error) { return 0, fmt.Errorf("asdfgh") }
 			},
-			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "codyrhodes") },
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return strings.Contains(err.Error(), "asdfgh")
+			},
 		},
 		{
-			name: "Repo.GetServerStorageSize + Downloader.Head > ServerStorageLimit returns ErrNotEnoughStorage",
+			name: "audio does not initially exist, server does not have enough storage",
 			configure: func() {
 				repo.getServerStorageSizeReturn = func() (int64, error) { return 150, nil }
 				downloader.head = func() (int64, string, error) { return 200, "application/json", nil }
 			},
-			errorFunc: func(err error) bool {
+			validateFunc: func(result *InsertAudioResult, err error) bool {
 				var actualErr ErrNotEnoughStorage
 				if !errors.As(err, &actualErr) {
 					t.Logf("expected ErrNotEnoughStorage, got %T", err)
@@ -185,30 +243,41 @@ func TestService_InsertAudioForServer(t *testing.T) {
 			},
 		},
 		{
-			name: "Downloader.Get returns error",
+			name: "audio does not initially exist, server has enough storage, error when downloading",
 			configure: func() {
-				downloader.get = func() (io.ReadCloser, error) { return nil, fmt.Errorf("randyorton") }
+				repo.getServerStorageSizeReturn = func() (int64, error) { return 150, nil }
+				downloader.head = func() (int64, string, error) { return 150, "application/json", nil }
+				downloader.get = func() (io.ReadCloser, error) { return nil, fmt.Errorf("zxcvbn") }
 			},
-			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "randyorton") },
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return strings.Contains(err.Error(), "zxcvbn")
+			},
 		},
 		{
-			name: "Storage.Stash returns error",
+			name: "audio does not initially exist, server has enough storage, error when storing",
 			configure: func() {
 				storage.stash = func() error { return fmt.Errorf("zelinavega") }
 			},
-			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "zelinavega") },
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return strings.Contains(err.Error(), "zelinavega")
+			},
 		},
 		{
-			name: "InsertAudioForServer returns error",
+			name: "audio does not initially exist, server has enough storage, error when inserting",
 			configure: func() {
 				repo.insertAudioForServer = func() error { return fmt.Errorf("johncena") }
 			},
-			errorFunc: func(err error) bool { return strings.Contains(err.Error(), "johncena") },
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				return strings.Contains(err.Error(), "johncena")
+			},
 		},
 		{
-			name:      "Everything succeeds",
+			name:      "audio does not initially exist, server has enough storage, everything succeeds",
 			configure: func() {},
-			errorFunc: func(err error) bool { return err == nil },
+			validateFunc: func(result *InsertAudioResult, err error) bool {
+				// 300 - 2 (from the head request) - 1 (used storage) = 297
+				return result.RemainingStorage == 297 && err == nil
+			},
 		},
 	}
 
@@ -216,16 +285,16 @@ func TestService_InsertAudioForServer(t *testing.T) {
 		Repo:               repo,
 		Storage:            storage,
 		Downloader:         downloader,
-		ServerStorageLimit: 300,
+		ServerStorageLimit: serverStorageLimit,
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			test.configure()
 
-			err := s.InsertAudioForServer(context.Background(), "audioURL", 1)
-			if !test.errorFunc(err) {
-				t.Errorf("unexpected error: %v", err)
+			result, err := s.InsertAudioForServer(context.Background(), "audioURL", 1)
+			if !test.validateFunc(result, err) {
+				t.Errorf("unexpected result: %v, %v", result, err)
 			}
 
 			repo.reset()
@@ -308,6 +377,7 @@ func TestService_RemoveAudioForServer(t *testing.T) {
 
 			repo.reset()
 			storage.reset()
+			
 		})
 	}
 }
