@@ -3,6 +3,5 @@ set -e
 
 cd "$(dirname "$0")"
 
-UID=$(id -u) \
-GID=$(id -g) \
-docker compose up --no-color --quiet-pull
+# write stderr to a file
+docker compose up --no-color --quiet-pull 2> ./

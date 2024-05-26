@@ -6,10 +6,7 @@ services:
       - /sql
       - --dialect
       - mysql
-      - --write-output
-      - /results/results.out
       - --disable-progress-bar
       - --nocolor
     volumes:
       - ../../../campa/migrations/flyway/sql:/sql:ro
-      - ./results:/results

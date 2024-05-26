@@ -1,16 +1,12 @@
 services:
   sqlfluff:
     image: sqlfluff/sqlfluff:3.0.6
-    user: ${UID}:${GID}
     command:
       - lint
       - /sql
       - --dialect
       - mysql
-      - --write-output
-      - /results/results.out
       - --disable-progress-bar
       - --nocolor
     volumes:
       - ../../../warehouse/migrations:/sql:ro
-      - ./results:/results
